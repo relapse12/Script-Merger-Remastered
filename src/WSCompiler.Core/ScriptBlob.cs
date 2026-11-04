@@ -1,0 +1,324 @@
+using System.IO;
+using System.Text;
+
+namespace WSCompiler.Core.Scripts;
+
+// Binding names the component targeted by an autobind field.
+public sealed class ScriptProperty
+{
+    public required string Name { get; init; }
+    public required int Flags { get; init; }
+    public required string Type { get; init; }
+    public required string Owner { get; init; }
+    public string Hint { get; init; } = "";
+    public string Binding { get; init; } = "";
+}
+
+public enum FunctionKind
+{
+    Method,
+    Global,
+    ReplaceGlobal,
+    Replace,
+    AddMethod,
+    Wrap,
+}
+
+// Jump offsets use RuntimeSize, which can differ from the stored code length.
+public sealed class ScriptFunction
+{
+    public required string Name { get; init; }
+    public required string Owner { get; init; }
+    public required int Flags { get; init; }
+    public required List<ScriptProperty> Return { get; init; }
+    public required List<ScriptProperty> Params { get; init; }
+    public required List<ScriptProperty> Locals { get; init; }
+    public required int RuntimeSize { get; init; }
+    public required byte[] Code { get; init; }
+    public FunctionKind Kind { get; set; }
+    public ScriptClass? Class { get; set; }
+}
+
+// Compound defaults use Children: array keys are empty; struct keys are field names.
+public sealed record ScriptDefault(string Property, string Value, List<ScriptDefaultNode> Children);
+
+public sealed record ScriptDefaultNode(string Key, string Value, List<ScriptDefaultNode> Children);
+
+// An automatically numbered member holds int.MaxValue.
+public sealed class ScriptEnum
+{
+    public required string Name { get; init; }
+    public required List<(string Name, int Value)> Members { get; init; }
+}
+
+public sealed class ScriptStruct
+{
+    public required string Name { get; init; }
+    public required int Flags { get; init; }
+    public required List<ScriptProperty> Properties { get; init; }
+    public required List<ScriptDefault> Defaults { get; init; }
+}
+
+public sealed class ScriptClass
+{
+    public required string Name { get; init; }
+    public required string Base { get; init; }
+    public required string StateOf { get; init; }
+    public required bool IsState { get; init; }
+    public required int Flags { get; init; }
+    public List<ScriptProperty> Properties { get; set; } = [];
+    public List<ScriptFunction> Functions { get; set; } = [];
+    public List<ScriptDefault> Defaults { get; set; } = [];
+}
+
+// The final four bytes point to the name table.
+public sealed class ScriptBlob
+{
+    public string FilePath { get; private init; } = "";
+    public int Version { get; private set; }
+    public string Platform { get; private set; } = "";
+    public string Build { get; private set; } = "";
+    public string Configuration { get; private set; } = "";
+    public List<ScriptEnum> Enums { get; } = [];
+    public List<ScriptStruct> Structs { get; } = [];
+    public List<ScriptClass> Classes { get; } = [];
+    public List<ScriptFunction> Globals { get; } = [];
+    public List<ScriptFunction> ReplacedGlobals { get; } = [];
+    public List<ScriptFunction> Replaced { get; } = [];
+    public List<ScriptFunction> AddedMethods { get; } = [];
+    public List<ScriptFunction> Wrapped { get; } = [];
+    public List<ScriptProperty> AddedFields { get; } = [];
+    public List<(string Name, int Kind)> Types { get; } = [];
+    public List<(string Name, int Type, int OwnerType)> ImportedProperties { get; } = [];
+    public List<(string Name, int OwnerType)> FunctionRefs { get; } = [];
+    public string[] Names { get; private set; } = [];
+
+    public IEnumerable<ScriptFunction> AllFunctions =>
+        Classes.SelectMany(c => c.Functions).Concat(Globals).Concat(ReplacedGlobals).Concat(Replaced)
+               .Concat(AddedMethods).Concat(Wrapped);
+
+    public static bool LooksLikeBlob(string path) =>
+        Path.GetExtension(path).Equals(".rsblob", StringComparison.OrdinalIgnoreCase);
+
+    public static ScriptBlob Open(string path)
+    {
+        return FromBytes(File.ReadAllBytes(path), path);
+    }
+
+    public static ScriptBlob FromBytes(byte[] data, string path)
+    {
+        var blob = new ScriptBlob { FilePath = path };
+        try
+        {
+            blob.Read(data);
+        }
+        catch (Exception ex) when (ex is IndexOutOfRangeException or ArgumentOutOfRangeException or ArgumentException)
+        {
+            throw new InvalidDataException("The script blob is damaged or in an unknown format.", ex);
+        }
+        return blob;
+    }
+
+    // Read the name table first because the remaining sections reference its entries.
+    private void Read(byte[] data)
+    {
+        if (data.Length < 16)
+            throw new InvalidDataException("The file is too small to be a script blob.");
+
+        var r = new BlobReader(data, 0);
+        int tableAt = BitConverter.ToInt32(data, data.Length - 4);
+        if (tableAt <= 0 || tableAt >= data.Length - 4)
+            throw new InvalidDataException("Not a compiled script blob (no name table).");
+        var names = new BlobReader(data, tableAt);
+        int count = names.U32();
+        if (count < 0 || count > data.Length - tableAt - 4)
+            throw new InvalidDataException("Invalid script blob name-table count.");
+        Names = new string[count];
+        for (int i = 0; i < count; i++)
+            Names[i] = names.Str();
+        r.Names = Names;
+
+        Version = r.U32();
+        if (Version != 1)
+            throw new InvalidDataException($"Unsupported script blob version {Version}.");
+        Platform = r.Str();
+        Build = r.Str();
+        r.Skip(8);
+        Configuration = r.Str();
+
+        for (int n = r.Count(); n > 0; n--)
+        {
+            string name = r.Name();
+            var members = new List<(string, int)>();
+            for (int m = r.Count(); m > 0; m--)
+                members.Add((r.Name(), r.Vlq()));
+            Enums.Add(new ScriptEnum { Name = name, Members = members });
+        }
+
+        for (int n = r.Count(); n > 0; n--)
+        {
+            string name = r.Name();
+            int flags = r.Vlq();
+            Structs.Add(new ScriptStruct { Name = name, Flags = flags, Properties = Props(r), Defaults = Defaults(r) });
+        }
+
+        for (int n = r.Count(); n > 0; n--)
+        {
+            var c = new ScriptClass
+            {
+                Name = r.Name(),
+                Base = r.Name(),
+                StateOf = r.Name(),
+                IsState = r.U8() != 0,
+                Flags = r.Vlq(),
+                Properties = Props(r)
+            };
+            for (int f = r.Count(); f > 0; f--)
+                c.Functions.Add(Function(r, FunctionKind.Method, c));
+            c.Defaults = Defaults(r);
+            Classes.Add(c);
+        }
+
+        ReadFunctions(r, Globals, FunctionKind.Global);
+        ReadFunctions(r, ReplacedGlobals, FunctionKind.ReplaceGlobal);
+        ReadFunctions(r, Replaced, FunctionKind.Replace);
+        ReadFunctions(r, AddedMethods, FunctionKind.AddMethod);
+        ReadFunctions(r, Wrapped, FunctionKind.Wrap);
+        AddedFields.AddRange(Props(r));
+
+        for (int n = r.Count(); n > 0; n--)
+            Types.Add((r.Name(), r.Vlq()));
+        for (int n = r.Count(); n > 0; n--)
+            ImportedProperties.Add((r.Name(), r.Vlq(), r.Vlq()));
+        for (int n = r.Count(); n > 0; n--)
+            FunctionRefs.Add((r.Name(), r.Vlq()));
+
+        if (r.Position != tableAt)
+            throw new InvalidDataException("The script blob did not read through to its name table.");
+    }
+
+    private static void ReadFunctions(BlobReader r, List<ScriptFunction> into, FunctionKind kind)
+    {
+        for (int n = r.Count(); n > 0; n--)
+            into.Add(Function(r, kind, null));
+    }
+
+    // The stored code length counts the four-byte runtime size that is read ahead of the code.
+    private static ScriptFunction Function(BlobReader r, FunctionKind kind, ScriptClass? owner)
+    {
+        string name = r.Name(), ownerName = r.Name();
+        int flags = r.Vlq();
+        var ret = Props(r);
+        var parameters = Props(r);
+        var locals = Props(r);
+        int codeLength = r.Vlq() - 4;
+        int runtime = r.U32();
+        var code = r.Bytes(codeLength);
+        return new ScriptFunction
+        {
+            Name = name, Owner = ownerName, Flags = flags, Return = ret, Params = parameters, Locals = locals,
+            RuntimeSize = runtime, Code = code, Kind = kind, Class = owner,
+        };
+    }
+
+    private static List<ScriptProperty> Props(BlobReader r)
+    {
+        var list = new List<ScriptProperty>();
+        for (int n = r.Count(); n > 0; n--)
+        {
+            string name = r.Name();
+            string hint = r.Str();
+            int flags = r.Vlq();
+            string type = r.Name(), owner = r.Name();
+            string binding = r.Name();
+            list.Add(new ScriptProperty { Name = name, Hint = hint, Flags = flags, Type = type, Owner = owner, Binding = binding });
+        }
+        return list;
+    }
+
+    private static List<ScriptDefault> Defaults(BlobReader r)
+    {
+        var list = new List<ScriptDefault>();
+        for (int n = r.Count(); n > 0; n--)
+        {
+            string prop = r.Name();
+            var node = DefaultNode(r);
+            list.Add(new ScriptDefault(prop, node.Value, node.Children));
+        }
+        return list;
+    }
+
+    private static ScriptDefaultNode DefaultNode(BlobReader r, int depth = 0)
+    {
+        if (depth > 128) throw new InvalidDataException("Default values are nested too deeply.");
+        string key = r.Name();
+        string value = r.Str();
+        var children = new List<ScriptDefaultNode>();
+        for (int n = r.Count(); n > 0; n--)
+            children.Add(DefaultNode(r, depth + 1));
+        return new ScriptDefaultNode(key, value, children);
+    }
+}
+
+// Read blob values with bounds checks so truncated files fail during parsing.
+internal sealed class BlobReader(byte[] data, int position)
+{
+    public int Position { get; private set; } = position;
+    public string[] Names { get; set; } = [];
+
+    public byte U8() => data[Position++];
+
+    public int U32()
+    {
+        int v = BitConverter.ToInt32(data, Position);
+        Position += 4;
+        return v;
+    }
+
+    public void Skip(int n)
+    {
+        if (n < 0 || n > data.Length - Position) throw new InvalidDataException("Truncated script blob.");
+        Position += n;
+    }
+
+    public byte[] Bytes(int n)
+    {
+        if (n < 0 || n > data.Length - Position) throw new InvalidDataException("Invalid bytecode size.");
+        var b = data.AsSpan(Position, n).ToArray();
+        Position += n;
+        return b;
+    }
+
+	public int Vlq()
+	{
+		int position = Position;
+		int value = Bytecode.Vlq( data, ref position );
+		Position = position;
+
+		return value;
+	}
+
+    public int Count()
+    {
+        int value = Vlq();
+        if (value < 0 || value > data.Length - Position) throw new InvalidDataException("Invalid table count.");
+        return value;
+    }
+
+    public string Str()
+    {
+        int rawLength = Vlq();
+        if (rawLength == int.MinValue) throw new InvalidDataException("Invalid string length.");
+        int length = Math.Abs(rawLength);
+        if (length > data.Length - Position) throw new InvalidDataException("Truncated string.");
+        string s = Encoding.UTF8.GetString(data, Position, length);
+        Position += length;
+        return s;
+    }
+
+    public string Name()
+    {
+        int i = Vlq();
+        return i >= 0 && i < Names.Length ? Names[i] : throw new InvalidDataException("Invalid name table reference.");
+    }
+}

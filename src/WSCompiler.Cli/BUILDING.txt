@@ -1,0 +1,13 @@
+Requires the .NET 8 SDK. Run from this folder; keep the sibling
+WSCompiler.Core and WSCompiler.CompilerCore folders in place.
+
+Build:
+  dotnet build WSCompiler.Cli.csproj -c Release
+
+Publish for Windows x64:
+  dotnet publish WSCompiler.Cli.csproj -c Release -r win-x64 --self-contained false -p:DebugType=None -o publish
+
+Run (requires the .NET 8 runtime):
+  .\publish\WSCompiler.exe --help
+
+WSCompiler.exe contains its compiler dependencies. README.md lists the commands.

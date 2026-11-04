@@ -1,0 +1,18 @@
+WitcherScript Compiler — third-party notices
+
+W3 Mod Workbench by Faen90
+https://github.com/Faen668/W3ModWorkbench
+MIT License; the complete license is in Workbench-MIT.txt.
+
+The compiler core, parser, bytecode definitions, operators, blob reader and text
+decoder are adapted from Workbench. The native RTTI declaration resource
+is copied from the same version.
+
+WebSpam and Aelto — tw3-cahirb
+https://github.com/Aelto/tw3-cahirb
+https://github.com/Aelto/tw3-cahirb/pull/1
+
+Workbench attributes its C# compiler to WebSpam's WitcherScript-to-rsblob
+compiler contributed to Aelto's tw3-cahirb, under MIT. That attribution is
+retained here. The ordered engine operator table also draws on Aelto's format research. 
+Workbench describes its embedded native declaration list as generated with the game's -dumprtti option.

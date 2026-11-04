@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>WSCompiler.Core</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../WSCompiler.Core/**/*.cs" Exclude="../WSCompiler.Core/Recovery/**;../WSCompiler.Core/bin/**;../WSCompiler.Core/obj/**" />
+    <EmbeddedResource Include="../WSCompiler.Core/Standalone/rtti.txt" LogicalName="WSCompiler.Core.Scripts.Standalone.rtti.txt" />
+  </ItemGroup>
+</Project>

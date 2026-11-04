@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>WitcherScriptMerger</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>True</UseWindowsForms>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="Tools\W3Bundle\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="app.config" LogicalName="ScriptMergerRemastered.DefaultSettings" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Forms.DependencyForm.resx" LogicalName="WitcherScriptMerger.Forms.DependencyForm.resources" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Forms.MainForm.resx" LogicalName="WitcherScriptMerger.Forms.MainForm.resources" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Forms.MergeReportForm.resx" LogicalName="WitcherScriptMerger.Forms.MergeReportForm.resources" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Forms.OptionsForm.resx" LogicalName="WitcherScriptMerger.Forms.OptionsForm.resources" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Forms.PackReportForm.resx" LogicalName="WitcherScriptMerger.Forms.PackReportForm.resources" />
+    <EmbeddedResource Update="Resources/WitcherScriptMerger.Properties.Resources.resx" LogicalName="WitcherScriptMerger.Properties.Resources.resources" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../WitcherScriptMerger.Engine/WitcherScriptMerger.Engine.csproj" />
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.1.1" ExcludeAssets="build;buildTransitive;analyzers" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="System.Windows.Extensions" Version="9.0.0" />
+  </ItemGroup>
+</Project>

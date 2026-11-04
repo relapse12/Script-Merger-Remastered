@@ -1,0 +1,65 @@
+Script Merger Remastered v3.0
+===============================
+
+Requirements
+------------
+- The Witcher 3 Remastered 5.x
+- Microsoft .NET 8 Desktop Runtime (x64)
+- W3Bundle is included for bundle packing; official REDkit wcc_lite is no longer required.
+
+New or Fresh Installation (see the next section for updating)
+-------------------------
+1. Extract the complete Script Merger Remastered folder to a new preferred location
+2. Start WitcherScriptMerger.exe.
+3. Select the Remastered game directory when prompted.
+
+   ScriptMerger now uses the included W3Bundle packer instead of "REDkit dependencies"
+   It is automatically selected when no packer is configured.
+   Bundled location: Tools\W3Bundle\W3Bundle.exe.
+   
+   W3Bundle and wcc_lite both pack merged bundled text and generate metadata.
+   Bundle reading and extraction do not require either packer.
+
+Updating an existing Remastered installation
+---------------------------------------------
+1. Extract the new ZIP directly into your existing Script Merger Remastered folder.
+2. Allow all overwrites
+3. Start WitcherScriptMerger.exe.
+
+You can safely delete REDkit dependencies. Switch to W3Bundle below:
+Open Menu > Dependency Locations... and click Use Bundled W3Bundle. 
+
+Notes
+-----
+- This build is for Remastered 5.x only. Keep it separate from the Next Gen 4.x version.
+- The game executable must be bin\x64_dx12\witcher3.exe, version 5 or newer.
+- Do not copy your 4.x Data, MergeInventory.xml, or Merged Bundle Content into
+  this installation.
+- Tools\WSCompiler is a separate command-line script compiler. Script Merger does
+  not need it; its README.txt lists the commands.
+
+Credits
+-------
+W3Bundle v0.2.0 by webspam, included with the author's permission.
+https://github.com/webspam/W3Bundle/releases/tag/v0.2.0
+
+Based on the open-source Script Merger project by Phaz42.
+https://github.com/Phaz42/WitcherScriptMergerFreshAndAutomated
+
+Precompiled script format research by Aelto.
+https://github.com/Aelto/tw3-cahirb
+
+Compiler and decompiler based on W3 Mod Workbench by Faen90 (Faen),
+with the original compiler by webspam for Aelto's tw3-cahirb.
+https://github.com/Faen668/W3ModWorkbench
+
+Remastered compatibility guidance:
+https://docs.google.com/document/d/1-9A97cBUIfOIEXJiid-vkFIAEdZVWipAkyKid9AhWeU/edit?tab=t.0
+
+Nexus Mods Community Champions: Lewis Elementary, MerseyRockoff, SP3CNAZ, and TheRealArdCarraigh.
+https://www.nexusmods.com/profile/LewisElementary?gameId=952
+https://www.nexusmods.com/profile/MerseyRockoff
+https://www.nexusmods.com/profile/SP3CNAZ
+https://www.nexusmods.com/profile/TheRealArdCarraigh
+
+Licensed under GNU GPL v2. The complete license is included as Licenses\GPL-2.0.txt.

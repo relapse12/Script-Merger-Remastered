@@ -1,0 +1,168 @@
+#nullable enable
+namespace WitcherScriptMerger;
+
+internal static partial class UiText
+{
+	private static readonly TextEntry[] BlobMergeEntries =
+	[
+		new("BlobMerge", "Planning precompiled script resolutions", false),
+		new("BlobMerge", "Load order is unavailable. Check the Game Documents and mod.io folders, then refresh.", false),
+		new("BlobMerge", "The selected source was not checked. Refresh conflicts before merging.", false),
+		new("BlobMerge", "Merge availability has not been checked. Refresh conflicts.", false),
+		new("BlobMerge", "To combine these changes, select the conflicts and use Create Selected Merges.", false),
+		new("BlobMerge", "Merge unavailable: {0}", true),
+		new("BlobMerge", "Script merge requirements", false),
+		new("BlobMerge", "Select conflicts for these mods together:\n{0}", true),
+		new(
+			"ModFile",
+			"The compiled script overrides these loose-script changes.\nChanging priority or merging loose scripts alone will not restore them. See Diagnostics for merge options.",
+			false),
+		new(
+			"ModFile",
+			"The compiled definition overrides the loose definition.\nChanging priority or merging loose scripts alone will not restore it. See Diagnostics for merge options.",
+			false),
+		new("PrecompiledConflicts", "Changing priority or merging loose scripts alone cannot restore these changes.", false),
+		new(
+			"PrecompiledConflicts",
+			"Priority selects one version. Give your preferred mod higher priority: a smaller Priority number, or an earlier alphabetical folder name when neither has an assigned priority.",
+			false),
+		new("EnumConflicts", "Priority cannot resolve it. Use compatible versions of these mods.", false),
+		new(
+			"EnumConflicts",
+			"Combining these mods would change the numbers they use for {0}. Script Merger cannot safely make that change. Use compatible versions of these mods.",
+			true),
+		new("BlobMerge", "Merge unavailable—see the {0} enum conflict.", true),
+		new(
+			"BlobMerge",
+			"The compiled merge recovery information is missing from MergeInventory.xml. Restore the complete inventory before removing this merge.",
+			false),
+		new("BlobMerge", "Associated merged files will be removed together; unrelated merges are kept.", false),
+		new("BlobMerge", "Remove the selected merges and associated script files? Unrelated merges will be kept.", false),
+		new("BlobMerge", "Other merge sources have changed. Refresh conflicts before removing this merge.", false),
+		new("BlobMerge", "Updated scripts", false),
+		new("BlobMerge", "The compiled merge was edited outside Script Merger. Preserve those changes before rebuilding it.", false),
+		new("BlobMerge", "Saved merged source changed or is missing: {0}", true),
+		new("BlobMerge", "Invalid saved merge source.", false),
+		new("BlobMerge", "Saved merge ownership changed or is missing.", false),
+		new("BlobMerge", "This script belongs to a compiled merge. Refresh conflicts and use Create Selected Merges to update it.", false),
+		new("BlobMerge", "An update was interrupted. Close The Witcher 3 and refresh to recover the merge.", false),
+		new("BlobMerge", "{0} must contain one blob at content/precompiled.rsblob to be merged.", true),
+		new("BlobMerge", "The installed script set changed. Refresh conflicts and try again.", false),
+		new("BlobMerge", "Script inputs were added or removed in {0}. Refresh conflicts and try again.", true),
+		new(
+			"Categories",
+			"Overlapping compiled definitions. Select conventional conflicts and use Create Selected Merges to merge them. Mod.io remains read-only.",
+			false),
+		new(
+			"BlobMerge",
+			"The merge inventory is missing managed entries. Restore the complete MergeInventory.xml backup before rebuilding these merges.",
+			false),
+		new("BlobMerge", "An existing merge already owns {0}. Remove that merge before rebuilding.", true),
+		new("BlobMerge", "{0} cannot be fully recovered:\n{1}", true),
+		new("BlobMerge", "A script merge was interrupted. Close The Witcher 3 and refresh to recover it.", false),
+		new("BlobMerge", "Cannot preserve the vanilla source {0}: {1}", true),
+		new("BlobMerge", "Close", false),
+		new("BlobMerge", "Close The Witcher 3 before applying or restoring a merge.", false),
+		new("BlobMerge", "Current merge", false),
+		new("BlobMerge", "Load-order entries already exist for the merged output. Restore the previous merge first.", false),
+		new("BlobMerge", "Mod.io sources are read-only and cannot be merged.", false),
+		new(
+			"BlobMerge",
+			"No compiled-output priority satisfies the current dependencies. Change those priorities, or include the affected conventional blobs in this merge.",
+			false),
+		new(
+			"BlobMerge",
+			"Some mod.io states or priorities are unavailable. Check the selected mod.io and Game Documents folders before merging.",
+			false),
+		new("BlobMerge", "The managed blob merge could not be checked: {0}", true),
+		new("BlobMerge", "The merge could not be completed:\n{0}", true),
+		new("BlobMerge", "Vanilla script sources are required to recover and merge compiled edits.", false),
+		new("Categories", "Bundled Non-text - Not Mergeable", false),
+		new("Categories", "Bundled Text", false),
+		new("Categories", "DLC Bundle Resources - Not Mergeable", false),
+		new("Categories", "Multiple DLCs supply this resource. DLC load order selects the active version.", false),
+		new("Categories", "Non-Bundled XML", false),
+		new("Categories", "Not Mergeable", false),
+		new(
+			"Categories",
+			"Overlapping compiled definitions. Select conventional conflicts and use Create Selected Merges to review them. Mod.io remains read-only.",
+			false),
+		new(
+			"Categories",
+			"Overlapping XML definition changes. The declared override policy controls field extension or whole-definition replacement.",
+			false),
+		new("Categories", "Precompiled Script Symbols", false),
+		new("Categories", "Precompiled Scripts - Not Mergeable", false),
+		new("Categories", "Right-click mods to define your load order instead of merging", false),
+		new("Categories", "Script Merger Remastered doesn't know what these files are", false),
+		new("Categories", "Scripts", false),
+		new(
+			"Categories",
+			"Semantic blob inspection is not included. Multiple precompiled.rsblob files are reported conservatively and are never merged",
+			false),
+		new("Categories", "These .xml text files can be merged", false),
+		new("Categories", "These bundled text files can be merged", false),
+		new("Categories", "These plaintext .ws files can be merged", false),
+		new("Categories", "XML Definition Overrides - Not Mergeable", false),
+		new("EnumConflicts", "Compiled enum additions — {0}", true),
+		new("EnumConflicts", "Priority cannot resolve it.", false),
+		new(
+			"PrecompiledConflicts",
+			"Alternatively, give {0} higher priority than {1}: smaller Priority numbers, or earlier alphabetical folder names when neither has an assigned priority.",
+			true),
+		new(
+			"PrecompiledConflicts",
+			"Alternatively, choose one version by giving its mod higher priority: a smaller Priority number, or an earlier alphabetical folder name when neither has an assigned priority.",
+			false),
+		new(
+			"EnumConflicts",
+			"These mods assign the same number to different options. If they pass those options between mods, one option can be mistaken for another:",
+			false),
+		new(
+			"EnumConflicts",
+			"These mods use the same number for different options. One mod can mistake another mod's option for its own. Changing priority cannot fix this. See Diagnostics for the affected mods.",
+			false),
+		new("PrecompiledConflicts", "{0} prevents the following mods' compiled additions from running:", true),
+		new(
+			"PrecompiledConflicts",
+			"An enabled mod.io version has priority over conventional versions. To select a conventional version, disable the competing mod.io versions. Combining the versions requires a compatibility patch.",
+			false),
+		new(
+			"PrecompiledConflicts",
+			"Changing priorities, renaming folders or merging loose scripts alone cannot restore these changes. Use compatible versions or select this conflict and create a merge.",
+			false),
+		new("PrecompiledConflicts", "Competing compiled versions — {0}", true),
+		new("PrecompiledConflicts", "Compiled script conflict — {0}", true),
+		new(
+			"PrecompiledConflicts",
+			"Priority selects one version. Give your preferred mod higher priority: a smaller Priority number, or an earlier alphabetical folder name when neither has an assigned priority. To combine the versions, select this conflict and create a merge.",
+			false),
+		new(
+			"PrecompiledConflicts",
+			"Priority selects one version. Move your preferred mod ahead of the others in the mod.io load order (a smaller priority number). Combining the versions requires a compatibility patch.",
+			false),
+		new("PrecompiledConflicts", "The compiled implementation from {0} bypasses these loose-script changes:", true),
+		new("PrecompiledConflicts", "The mod.io implementation from {0} skips these conventional mods' compiled additions:", true),
+		new("PrecompiledConflicts", "These mods supply competing compiled definitions:", false),
+		new(
+			"PrecompiledConflicts",
+			"To include these additions, give the listed mods higher priority than {0}: smaller Priority numbers, or folder names that sort earlier alphabetically when neither has an assigned priority.",
+			true),
+		new(
+			"PrecompiledConflicts",
+			"To include these additions, move the listed mods ahead of {0} in the mod.io load order (smaller priority numbers).",
+			true),
+		new(
+			"PrecompiledConflicts",
+			"Use a compatible mod.io version, or switch to conventional copies before combining these changes.",
+			false),
+		new("PrecompiledConflicts", "Use a conventional installation of {0} to put these additions ahead of it.", true),
+		new("ScriptSymbolCache", "A script-symbol cache directory is required.", false),
+		new("ScriptSymbolCache", "Script symbol parsing returned no result.", false),
+		new("ScriptSymbolCache", "The script source changed while its symbols were being indexed.", false),
+		new("ScriptSymbolCache", "The script source could not be indexed from a stable snapshot.", false),
+		new("ScriptSymbolCache", "The script-symbol cache contains an empty key.", false),
+		new("ScriptSymbolCache", "The script-symbol cache contains invalid dependency metadata.", false),
+		new("ScriptSymbolCache", "The script-symbol cache contains invalid enum metadata.", false),
+	];
+}

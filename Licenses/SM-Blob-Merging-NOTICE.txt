@@ -1,0 +1,9 @@
+SM Remastered — integrated WitcherScript recovery and compiler
+
+Based on W3 Mod Workbench by Faen90 (Faen), under the MIT License.
+https://github.com/Faen668/W3ModWorkbench
+The full MIT notice is included as Workbench-MIT.txt in this directory.
+
+The original WitcherScript compiler was written by WebSpam and contributed to
+Aelto's tw3-cahirb. Attribution is retained here and in the compiler's third-party notices.
+https://github.com/Aelto/tw3-cahirb

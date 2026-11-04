@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Merge engine services target net8.0 independently of the WinForms UI. -->
+  <PropertyGroup>
+    <AssemblyName>WitcherScriptMerger.Engine</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace />
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <EnableRsBlobSemanticAnalysis Condition="'$(EnableRsBlobSemanticAnalysis)' == ''">true</EnableRsBlobSemanticAnalysis>
+    <DefineConstants Condition="'$(EnableRsBlobSemanticAnalysis)' == 'true'">$(DefineConstants);RSBLOB_SEMANTIC_ANALYSIS</DefineConstants>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Localization/ui_text_catalog.json" LogicalName="ScriptMergerRemastered.UiCatalog" />
+    <Compile Remove="FileIndex\RsBlobSymbolReader.cs" Condition="'$(EnableRsBlobSemanticAnalysis)' != 'true'" />
+    <Compile Remove="FileIndex\ScriptSymbolCache.cs" Condition="'$(EnableRsBlobSemanticAnalysis)' != 'true'" />
+    <Compile Remove="FileIndex\BlobDependencyAnalyzer.cs" Condition="'$(EnableRsBlobSemanticAnalysis)' != 'true'" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../WSCompiler.Core/WSCompiler.Core.csproj" />
+  </ItemGroup>
+  <Target Name="FingerprintMergeSemantics" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <MergeSemanticInput Include="../WSCompiler.Core/**/*.cs;../WSCompiler.Core/**/*.csproj;../WSCompiler.Core/Standalone/rtti.txt"
+        Exclude="../WSCompiler.Core/**/bin/**;../WSCompiler.Core/**/obj/**" />
+      <MergeSemanticInput Include="BlobMerging/BlobBodyComparisons.cs;BlobMerging/BlobConflictSelection.cs;BlobMerging/BlobMergeCheckCache.cs;BlobMerging/BlobMergePreflight.cs;BlobMerging/BlobMergeWorkspace.cs;BlobMerging/BlobMergeSymbolOutputs.cs;Inventory/**/*.cs;LoadOrder/**/*.cs;FileIndex/ModFileIndex.ScriptSources.cs;FileIndex/BlobDependencyAnalyzer.cs;FileIndex/RsBlobSymbolReader.cs;FileIndex/WitcherScriptSymbolReader.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobMergeStore.cs" />
+      <!-- Game-folder rules supplied explicitly to fingerprinted engine code. -->
+      <MergeSemanticInput Include="GameContent/GamePaths.cs;GameContent/GameSettingsLocation.cs" />
+      <MergeSemanticInput Include="Merging/**/*.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobMergeArtifacts.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobPlanningCache.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobMergeAdoption.cs" />
+      <MergeSemanticInput Include="BlobMerging/LoadedBlobMerge.cs;BlobMerging/BlobMergePlanning.cs;BlobMerging/BlobMergeBuilder.cs;BlobMerging/CompiledOutputPlacement.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobMergePlanCache.cs" />
+      <MergeSemanticInput Include="BlobMerging/BlobMergeValidation.cs" />
+      <MergeSemanticInput Include="FileIndex/ScopedScriptMember.cs;FileIndex/ModFileIndex.ScopedMembers.cs;FileIndex/ScriptSymbolCache.cs" />
+      <MergeSemanticInput Include="$(MSBuildProjectFile)" />
+      <MergeSemanticInput Include="FileIndex/Categories.cs;FileIndex/ModFile.cs;FileIndex/ModIoDiscovery.cs;FileIndex/PrecompiledConflictAnalysis.cs;FileIndex/EnumConflictAnalysis.cs;FileIndex/ScriptSymbolKey.cs;FileIndex/ScriptSymbolKind.cs" />
+    </ItemGroup>
+    <GetFileHash Files="@(MergeSemanticInput)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="MergeSemanticHash" />
+    </GetFileHash>
+    <WriteLinesToFile File="$(IntermediateOutputPath)merge-semantics.txt" Lines="@(MergeSemanticHash->'%(Identity):%(FileHash)');$(TargetFramework);$(DefineConstants)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(IntermediateOutputPath)merge-semantics.txt" LogicalName="ScriptMergerRemastered.MergeSemantics" />
+    </ItemGroup>
+  </Target>
+</Project>

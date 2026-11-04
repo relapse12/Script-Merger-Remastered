@@ -1,0 +1,13 @@
+Requires Windows and the .NET 8 SDK. Run from this folder.
+
+Build all projects:
+  dotnet build ScriptMergerRemastered.sln -c Release
+
+Publish SMR:
+  dotnet publish src/WitcherScriptMerger/WitcherScriptMerger.csproj -c Release --no-self-contained -p:DebugType=None -o runtime
+
+Publish the command-line compiler:
+  dotnet publish src/WSCompiler.Cli/WSCompiler.Cli.csproj -c Release -r win-x64 --no-self-contained -p:DebugType=None -o runtime/Tools/WSCompiler
+
+Copy Tools/KDiff3, Tools/W3Bundle and Tools/WSAnnoInspector from the matching
+runtime ZIP into runtime/Tools. Copy its INSTALL.txt and Licenses into runtime.

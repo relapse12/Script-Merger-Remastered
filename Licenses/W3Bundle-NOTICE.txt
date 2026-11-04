@@ -1,0 +1,13 @@
+W3Bundle v0.2.0
+Author: webspam
+Project: https://github.com/webspam/W3Bundle
+Release: https://github.com/webspam/W3Bundle/releases/tag/v0.2.0
+
+The unmodified W3Bundle executable is included with Script Merger Remastered
+with the author's permission, provided to relapse on 19 October 2026.
+
+W3Bundle is a third-party bundle packer. The official CD Projekt RED wcc_lite
+tool remains supported as an alternative and is not included here.
+
+This notice records attribution and permission for this distribution; it does
+not assign a license to W3Bundle or change its author's rights.
