@@ -294,8 +294,14 @@ public sealed class Assembler
                 break;
             }
             case (AnnotationKind.ReplaceMethod, { } cls):
-                plans.ReplaceClass.Add(Plan(0x40000 | 0x10000, cls));
-                break;
+			{
+				// Event replacements inherit the target's implicit Boolean return.
+				var target = _symbols.FindMethod( cls, decl.Name );
+				var context = target?.Specifiers.IsEvent == true ? new Wrap( WrapKind.None, target ) : Wrap.None;
+
+				plans.ReplaceClass.Add( Plan( 0x40000 | 0x10000, cls, context ) );
+				break;
+			}
             case (AnnotationKind.ReplaceMethod, null):
                 plans.ReplaceGlobal.Add(Plan(0x40000 | 0x2));
                 break;
