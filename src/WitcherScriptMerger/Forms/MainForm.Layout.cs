@@ -359,6 +359,7 @@ internal partial class MainForm
 		}
 	}
 
+	// Each split repaints all three trees. Timer messages arrive after painting, so each repaint finishes before the next split.
 	private void QueueWorkspaceSplit( int dividerCenterX )
 	{
 		pendingWorkspaceSplitX = dividerCenterX;
@@ -501,7 +502,9 @@ internal partial class MainForm
 	// Narrow panes stack their controls. Moving those controls can trigger layout again, so guard against nested calls.
 	private void UpdateResponsiveWorkspaceLayout()
 	{
-		if ( applyingResponsiveLayout || tlpConflictActions == null || tlpMain.ClientSize.Width <= 0 )
+		// Minimized windows report zero client space. Keep the visible pane measurements for restore.
+		if ( WindowState == FormWindowState.Minimized || applyingResponsiveLayout
+			|| tlpConflictActions == null || tlpMain.ClientSize.Width <= 0 )
 		{
 			return;
 		}

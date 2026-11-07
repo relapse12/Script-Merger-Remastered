@@ -69,7 +69,9 @@ internal sealed class ScanSummaryBar : Control
 
 	public override Size GetPreferredSize( Size proposedSize )
 	{
-		return new Size( proposedSize.Width, LayoutItems( Math.Max( 1, Width ) ) );
+		int width = proposedSize.Width > 0 ? proposedSize.Width : Width;
+
+		return new Size( proposedSize.Width, LayoutItems( Math.Max( 1, width ) ) );
 	}
 
 	protected override void OnSizeChanged( EventArgs e )
