@@ -178,11 +178,7 @@ internal partial class MainForm
 
 	private void ApplyThemeToConflictSearchResults()
 	{
-		treConflictSearchResults.ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
-		treConflictSearchResults.BackColor = ThemeManager.CurrentTheme.TreeViewBackColor;
-		treConflictSearchResults.FullRowSelect = false;
-		treConflictSearchResults.HideSelection = false;
-		treConflictSearchResults.ApplyListSize();
+		Program.ThemeMngr.ApplyTreeTheme( treConflictSearchResults, this );
 	}
 
 	private bool IsConflictSearchActive => !string.IsNullOrWhiteSpace( txtConflictModSearch.Text )
@@ -561,15 +557,6 @@ internal partial class MainForm
 	// Remember the button state once, so ending a search restores the previous view.
 	private void ShowConflictSearchResults( int matchCount )
 	{
-		tlpMain.Controls.Remove( treConflicts );
-		tlpMain.Controls.Remove( lblNoConflicts );
-		tlpMain.SetColumnSpan( treConflictSearchResults, 2 );
-
-		if ( !tlpMain.Controls.Contains( treConflictSearchResults ) )
-		{
-			tlpMain.Controls.Add( treConflictSearchResults, 1, 1 );
-		}
-
 		if ( !conflictSearchActionStateCaptured )
 		{
 			createMergesEnabledBeforeSearch = btnCreateMerges.Enabled;
@@ -594,6 +581,7 @@ internal partial class MainForm
 			() => matchCount == 1 ? UiText.F( "MainForm", $"{matchCount} matching file" ) : UiText.F( "MainForm", $"{matchCount} matching files" ) );
 		lblStatusLeft2.Visible = false;
 		SetMergeButtonTextIfValidSelection();
+		ShowConflictPane( treConflictSearchResults );
 	}
 
 	internal void RefreshNoConflictsAppearance()
@@ -606,8 +594,6 @@ internal partial class MainForm
 
 	private void ShowDefaultConflictView()
 	{
-		tlpMain.Controls.Remove( treConflictSearchResults );
-
 		if ( conflictSearchActionStateCaptured )
 		{
 			btnCreateMerges.Enabled = session.IsScanCurrent && createMergesEnabledBeforeSearch;
@@ -619,26 +605,13 @@ internal partial class MainForm
 		{
 			LiveText.BindText( lblNoConflicts, () => scanFailed ? UiText.T( "MainForm", "Scan failed" ) : GetDiagnosticIssues().Count > 0
 				? UiText.T( "MainForm", "No conflicts found in inspected resources" ) : UiText.T( "MainForm", "No conflicts detected" ) );
-			tlpMain.Controls.Remove( treConflicts );
 			lblNoConflicts.BackColor = ThemeManager.CurrentTheme.TreeViewBackColor;
 			lblNoConflicts.ForeColor = ThemeManager.CurrentTheme.ForeDimmedColor;
-			tlpMain.SetColumnSpan( lblNoConflicts, 2 );
-
-			if ( !tlpMain.Controls.Contains( lblNoConflicts ) )
-				tlpMain.Controls.Add( lblNoConflicts, 1, 1 );
 
 			LiveText.BindText( lblConflicts, () => UiText.T( "MainForm", "Conflicts" ) );
 		}
 		else
 		{
-			tlpMain.Controls.Remove( lblNoConflicts );
-			tlpMain.SetColumnSpan( treConflicts, 2 );
-
-			if ( !tlpMain.Controls.Contains( treConflicts ) )
-			{
-				tlpMain.Controls.Add( treConflicts, 1, 1 );
-			}
-
 			LiveText.BindText( lblConflicts, () => UiText.T( "MainForm", "Conflicts" ) );
 		}
 
@@ -646,5 +619,40 @@ internal partial class MainForm
 		{
 			lblConflicts.Text += UiText.T( "MainForm", " (Refresh Pending)" );
 		}
+
+		ShowConflictPane( treConflicts.IsEmpty() ? lblNoConflicts : treConflicts );
+	}
+
+	// Attach and size the next view before exposing its native scrollbar.
+	private void ShowConflictPane( Control view )
+	{
+		if ( view.Parent == tlpMain )
+			return;
+
+		view.Visible = false;
+		tlpMain.SuspendLayout();
+
+		try
+		{
+			foreach ( Control previous in new Control[] { treConflicts, treConflictSearchResults, lblNoConflicts } )
+				if ( previous != view )
+					tlpMain.Controls.Remove( previous );
+
+			tlpMain.SetColumnSpan( view, 2 );
+			tlpMain.Controls.Add( view, 1, 1 );
+		}
+		finally
+		{
+			tlpMain.ResumeLayout( performLayout: true );
+		}
+
+		FlushResponsiveWorkspaceLayout();
+
+		// The table skips hidden controls when it lays out, so place the hidden view in its cell
+		int[] columns = tlpMain.GetColumnWidths();
+		int[] rows = tlpMain.GetRowHeights();
+		view.SetBounds( columns[0] + view.Margin.Left, rows[0] + view.Margin.Top,
+			columns[1] + columns[2] - view.Margin.Horizontal, rows[1] - view.Margin.Vertical );
+		view.Visible = true;
 	}
 }
