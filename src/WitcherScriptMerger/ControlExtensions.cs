@@ -168,7 +168,9 @@ internal static class ControlExtensions
 		{
 			IntPtr item = SendMessage( tree.Handle, TVM_GETNEXTITEM, row, IntPtr.Zero );
 
+			// Child nodes can be detached before Windows finishes removing their rows.
 			if ( item == IntPtr.Zero
+				|| TreeNode.FromHandle( tree, item ) == null
 				|| ( SendMessage( tree.Handle, TVM_GETITEMSTATE, item, TVIS_NATIVE_HIGHLIGHTS ) & TVIS_NATIVE_HIGHLIGHTS ) == 0 )
 			{
 				continue;
