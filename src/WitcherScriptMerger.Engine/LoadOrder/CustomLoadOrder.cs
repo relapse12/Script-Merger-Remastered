@@ -517,8 +517,11 @@ internal class CustomLoadOrder
 	{
 		XmlOverrideTooltipInfo info = active.XmlOverrideInfo;
 
+		// A conflict for one item can include item_extension rules. Check the source type before applying item rules.
 		if ( ReferenceEquals( conflict.Category, Categories.XmlDefinitionOverride ) && info?.Key.DefinitionType == "item"
-			&& info.Parameter.StartsWith( "@", StringComparison.Ordinal ) && !info.IsWholeDefinitionConflict
+			&& ( info.Parameter.StartsWith( "@", StringComparison.Ordinal ) || info.Parameter == "variants" )
+			&& info.VariantDefinitionType != "item_extension"
+			&& !info.IsWholeDefinitionConflict
 			&& info.Policies.Count == 1 && info.Policies[0] is "default" or "extend" )
 		{
 			if ( info.HasVanillaDefinition == null || info.DefinitionSourceCount > conflict.Mods.Count )
@@ -534,6 +537,7 @@ internal class CustomLoadOrder
 			if ( info.Policies[0] == "extend" && conflict.Mods.Count == 2 )
 			{
 				FileHash disabledDefault = conflict.Mods.FirstOrDefault( source => source != active
+					&& source.XmlOverrideInfo?.VariantDefinitionType != "item_extension"
 					&& source.XmlOverrideInfo?.Policies.SequenceEqual( new[] { "default" } ) == true );
 
 				if ( disabledDefault != null )
@@ -564,7 +568,7 @@ internal class CustomLoadOrder
 	private static bool AreComparableItemParameters( IEnumerable<FileHash> enabledSources, XmlOverrideTooltipInfo first )
 	{
 		if ( first == null || first.IsWholeDefinitionConflict || first.Key.DefinitionType != "item"
-			|| !first.Parameter.StartsWith( "@", StringComparison.Ordinal ) )
+			|| !( first.Parameter.StartsWith( "@", StringComparison.Ordinal ) || first.Parameter == "variants" ) )
 		{
 			return false;
 		}
@@ -651,6 +655,10 @@ internal class CustomLoadOrder
 
 		bool Known( FileHash source ) => Setting( source ) is { } setting ? HasKnownState( setting ) : !External( source );
 
+		// Find the item list the game will use before checking it against extension rules.
+		FileHash[] itemSources = conflict.Mods.Where( source => source.XmlOverrideInfo?.VariantDefinitionType == "item"
+			&& !( Setting( source ) is { StateKnown: true, IsEnabled: false } ) ).ToArray();
+		XmlOverrideResolution itemList = ResolveItemVariantList( settings, conflict, itemSources );
 		var results = new List<XmlVariantResolution>();
 
 		foreach ( var pair in competitions )
@@ -665,6 +673,36 @@ internal class CustomLoadOrder
 				|| Setting( right ) is { StateKnown: true, IsEnabled: false } )
 				continue;
 
+			if ( pair.Interaction == XmlVariantInteraction.ItemLists )
+			{
+				FileHash winner = itemList.Resolved
+					? itemSources.FirstOrDefault( source => source.Name.EqualsIgnoreCase( itemList.Winner ) ) : null;
+
+				// Skip this pair when the game uses a different mod's list or the vanilla list.
+				if ( itemList.Resolved && winner != left && winner != right )
+					continue;
+
+				results.Add( new( left, right, winner, !External( left ) && !External( right ), pair.Interaction ) );
+
+				continue;
+			}
+
+			if ( pair.Interaction == XmlVariantInteraction.ExtensionOverItem )
+			{
+				FileHash item = left.XmlOverrideInfo.VariantDefinitionType == "item" ? left : right;
+				FileHash extension = item == left ? right : left;
+
+				if ( itemList.Resolved && !item.Name.EqualsIgnoreCase( itemList.Winner ) )
+					continue;
+
+				// When both match, the item_extension rule wins over the item list.
+				bool known = itemList.Resolved && Known( item ) && Known( extension )
+					&& !External( item ) && !External( extension );
+				results.Add( new( left, right, known ? extension : null, false, pair.Interaction ) );
+
+				continue;
+			}
+
 			bool fixedOrder = !External( left ) && !External( right );
 			bool knownOrder = Known( left ) && Known( right ) && ( !fixedOrder
 				|| !string.Equals(
@@ -677,6 +715,21 @@ internal class CustomLoadOrder
 		}
 
 		return results;
+	}
+
+	// Item lists follow the same default/extend order as the other item properties.
+	private static XmlOverrideResolution ResolveItemVariantList( ModLoadSetting[] settings, ModFile conflict, FileHash[] sources )
+	{
+		if ( sources.Length == 0 || !TryGetEnabledSources( settings, sources, out FileHash[] enabled ) )
+			return UnresolvedXml();
+
+		if ( enabled.Length == 1 )
+			return ResolveSingleXmlSource( conflict, enabled[0] );
+
+		FileHash[] priorityOrder = enabled.OrderBy( source => source,
+			Comparer<FileHash>.Create( ( left, right ) => CompareXmlOverrideSourcesForSettings( settings, left, right ) ) ).ToArray();
+
+		return ResolveItemParameterPolicies( settings, enabled, priorityOrder );
 	}
 
 	internal static int CompareXmlOverrideSourcesForSettings(

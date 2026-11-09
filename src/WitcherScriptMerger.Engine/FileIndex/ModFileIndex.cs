@@ -866,7 +866,8 @@ internal partial class ModFileIndex
 					ConflictDetail = $"{valueDescription}\n{string.Join( "\n", source.ResourcePaths )}",
 					XmlOverrideInfo = AddXmlDefinitionContext( new XmlOverrideTooltipInfo( conflict.Key, conflict.Parameter, source.Value,
 						conflict.IsWholeDefinitionReplacement, source.ConflictModes ?? new[] { source.ConflictMode },
-						source.EquipmentVariants, source.DeclarationCount, VariantCompetitions: conflict.VariantCompetitions ) )
+						source.EquipmentVariants, source.DeclarationCount, VariantCompetitions: conflict.VariantCompetitions,
+						VariantDefinitionType: source.VariantDefinitionType ) )
 				} );
 			}
 

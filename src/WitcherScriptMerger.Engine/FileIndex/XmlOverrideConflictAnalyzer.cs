@@ -50,7 +50,15 @@ internal sealed record XmlEquipmentVariants( IReadOnlyList<XmlEquipmentRule> Rul
 	internal IEnumerable<string> Items => Rules.SelectMany( rule => rule.Items );
 }
 
-internal sealed record XmlVariantCompetition( string LeftMod, string RightMod, bool ConditionsKnown );
+internal enum XmlVariantInteraction
+{
+	EquipmentRules,
+	ItemLists,
+	ExtensionOverItem
+}
+
+internal sealed record XmlVariantCompetition( string LeftMod, string RightMod, bool ConditionsKnown,
+	XmlVariantInteraction Interaction = XmlVariantInteraction.EquipmentRules );
 
 internal sealed record XmlOverrideConflictSource(
 	XmlOverrideSource Source,
@@ -59,12 +67,12 @@ internal sealed record XmlOverrideConflictSource(
 	IReadOnlyList<string> ResourcePaths,
 	IReadOnlyList<string>? ConflictModes = null,
 	XmlEquipmentVariants? EquipmentVariants = null,
-	int DeclarationCount = 1 );
+	int DeclarationCount = 1, string? VariantDefinitionType = null );
 
 internal sealed record XmlOverrideTooltipInfo( XmlOverrideDefinitionKey Key, string Parameter, string Value,
 	bool IsWholeDefinitionConflict, IReadOnlyList<string> Policies, XmlEquipmentVariants? EquipmentVariants = null,
 	int DeclarationCount = 1, bool? HasVanillaDefinition = false, int DefinitionSourceCount = 0,
-	IReadOnlyList<XmlVariantCompetition>? VariantCompetitions = null );
+	IReadOnlyList<XmlVariantCompetition>? VariantCompetitions = null, string? VariantDefinitionType = null );
 
 internal static class XmlOverrideToolTips
 {
@@ -98,7 +106,7 @@ internal static class XmlOverrideToolTips
 			foreach ( FileHash source in sources )
 			{
 				XmlOverrideTooltipInfo info = source.XmlOverrideInfo!;
-				string templates = info.EquipmentVariants != null ? DescribeEquipment( info.EquipmentVariants )
+				string templates = info.EquipmentVariants != null ? DescribeEquipment( info )
 					: UiText.T( "XmlOverrideToolTips", "variant details unavailable" );
 
 				summary.Add( UiText.Format( "XmlOverrideToolTips", "{0}: on_conflict={1}  {2}",
@@ -134,8 +142,15 @@ internal static class XmlOverrideToolTips
 		return string.Join( "\n", lines );
 	}
 
-	private static string DescribeEquipment( XmlEquipmentVariants variants )
+	private static string DescribeEquipment( XmlOverrideTooltipInfo info )
 	{
+		XmlEquipmentVariants variants = info.EquipmentVariants!;
+
+		if ( variants.Rules.Count == 0 )
+			return info.VariantDefinitionType == "item"
+				? UiText.T( "XmlOverrideToolTips", "empty item appearance list (clears item-owned rules)" )
+				: UiText.T( "XmlOverrideToolTips", "empty appearance list (keeps earlier rules)" );
+
 		string[] templates = variants.EquipTemplates.Distinct( StringComparer.Ordinal ).ToArray();
 
 		return "equip_template=" + string.Join( ", ", templates.Select( template => "\"" + template + "\"" ) );
@@ -165,7 +180,8 @@ internal static class XmlOverrideToolTips
 		var active = resolutions.Where( pair => hoveredSource == null || pair.Left.Name.EqualsIgnoreCase( hoveredSource.Name )
 			|| pair.Right.Name.EqualsIgnoreCase( hoveredSource.Name ) ).ToArray();
 		bool validOrder = overrideSettings != null || conflict.CurrentLoadOrder?.IsValid != false;
-		bool allFixed = validOrder && active.Length > 0 && active.All( pair => pair.FixedOrder && pair.Winner != null );
+		bool allFixed = validOrder && active.Length > 0 && active.All( pair => pair.FixedOrder && pair.Winner != null
+			&& pair.Interaction != XmlVariantInteraction.ExtensionOverItem );
 
 		if ( active.Length == 0 )
 		{
@@ -179,9 +195,15 @@ internal static class XmlOverrideToolTips
 		{
 			if ( !validOrder || pair.Winner == null )
 			{
-				yield return technicalDetails
-					? UiText.Format( "XmlOverrideToolTips", "XML order: {0} / {1} — unavailable", pair.Left.Name, pair.Right.Name )
-					: UiText.Format(
+				if ( technicalDetails )
+					yield return pair.Interaction == XmlVariantInteraction.ExtensionOverItem
+						? UiText.T( "XmlOverrideToolTips", "The active item list or item_extension source is uncertain." )
+						: UiText.Format( "XmlOverrideToolTips", "XML order: {0} / {1} — unavailable", pair.Left.Name, pair.Right.Name );
+				else if ( pair.Interaction == XmlVariantInteraction.ItemLists )
+					yield return UiText.Format( "XmlOverrideToolTips", "The item appearance list used between {0} and {1} could not be determined.",
+						pair.Left.Name, pair.Right.Name );
+				else
+					yield return UiText.Format(
 						"XmlOverrideToolTips",
 						"When both equipment rules match, the appearance winner between {0} and {1} is unknown.",
 						pair.Left.Name,
@@ -193,9 +215,22 @@ internal static class XmlOverrideToolTips
 			FileHash winner = pair.Winner;
 			FileHash other = winner == pair.Left ? pair.Right : pair.Left;
 
+			if ( pair.Interaction == XmlVariantInteraction.ExtensionOverItem )
+			{
+				yield return technicalDetails
+					? UiText.T( "XmlOverrideToolTips", "item_extension rules take precedence over item-owned rules regardless of DLC registration order." )
+					: UiText.Format( "XmlOverrideToolTips",
+						"When both equipment rules match, {0}'s item_extension appearance wins over {1}'s item appearance.",
+						winner.Name, other.Name );
+
+				continue;
+			}
+
 			if ( !technicalDetails )
 			{
-				string summary = UiText.Format(
+				string summary = pair.Interaction == XmlVariantInteraction.ItemLists
+					? UiText.Format( "XmlOverrideToolTips", "{0}'s item appearance list is used. The list from {1} does not apply.", winner.Name, other.Name )
+					: UiText.Format(
 					"XmlOverrideToolTips",
 					"When both equipment rules match, {0}'s appearance wins over {1}.",
 					winner.Name,
@@ -603,6 +638,10 @@ internal static class XmlOverrideConflictAnalyzer
 				.Distinct( StringComparer.OrdinalIgnoreCase )
 				.OrderBy( value => value, StringComparer.OrdinalIgnoreCase ) )
 			{
+				// AnalyzeVariants compares appearance lists, so item and item_extension are checked together.
+				if ( parameter == "variants" && key.DefinitionType is "item" or "item_extension" )
+					continue;
+
 				AggregatedDefinition[] writers = sources
 					.Where( source => source.Parameters.ContainsKey( parameter ) )
 					.ToArray();
@@ -618,46 +657,99 @@ internal static class XmlOverrideConflictAnalyzer
 					continue;
 				}
 
-				IReadOnlyList<XmlVariantCompetition>? competitions = null;
-
-				if ( parameter == "variants" && key.DefinitionType == "item_extension"
-					&& writers.All( source => source.ConflictMode == "default"
-						&& source.EquipmentVariants != null ) )
-				{
-					var pairs = new List<XmlVariantCompetition>();
-
-					for ( int i = 0; i < writers.Length; i++ )
-						for ( int j = i + 1; j < writers.Length; j++ )
-						{
-							if ( writers[i].Parameters[parameter] == writers[j].Parameters[parameter] )
-								continue;
-
-							bool? overlap = XmlEquipmentVariantAnalysis.Compete( writers[i].EquipmentVariants!,
-								writers[j].EquipmentVariants!, key.Context, itemCategories );
-
-							if ( overlap != false )
-								pairs.Add( new( writers[i].Source.ModName, writers[j].Source.ModName, overlap == true ) );
-						}
-
-					if ( pairs.Count == 0 )
-						continue;
-
-					competitions = pairs;
-					writers = writers.Where( source => pairs.Any( pair => pair.LeftMod == source.Source.ModName
-						|| pair.RightMod == source.Source.ModName ) ).ToArray();
-				}
-
 				conflicts.Add( new XmlOverrideConflict(
 					key,
 					parameter,
 					IsWholeDefinitionReplacement: false,
-					writers.Select( source => source.ToConflictSource( source.Parameters[parameter] ) ).ToArray(), competitions ) );
+					writers.Select( source => source.ToConflictSource( source.Parameters[parameter] ) ).ToArray() ) );
 			}
 		}
+
+		conflicts.AddRange( AnalyzeVariants( declarations, itemCategories ) );
 
 		return conflicts
 			.OrderBy( conflict => conflict.DisplayPath, StringComparer.OrdinalIgnoreCase )
 			.ToArray();
+	}
+
+	// Find mods that change the same item's appearance through item or item_extension.
+	// Compare complete item lists and check extension rules for overlapping equipment conditions.
+	private static IEnumerable<XmlOverrideConflict> AnalyzeVariants( XmlOverrideDefinition[] declarations,
+		IReadOnlyDictionary<string, string> itemCategories )
+	{
+		var targets = declarations.Where( definition => definition.Key.DefinitionType is "item" or "item_extension"
+			&& definition.Parameters.ContainsKey( "variants" ) )
+			.GroupBy( definition => new XmlOverrideDefinitionKey( definition.Key.Context, "items", "item", definition.Key.Identity )
+				.ComparisonKey, StringComparer.OrdinalIgnoreCase );
+
+		foreach ( var target in targets )
+		{
+			XmlOverrideDefinition[] sections = target.ToArray();
+			bool sameType = sections.Select( definition => definition.Key.DefinitionType ).Distinct().Count() == 1;
+
+			if ( sameType && sections.Any( definition => definition.ConflictMode == "replace" ) )
+				continue;
+
+			AggregatedDefinition[] writers = sections.GroupBy( definition => definition.Source.ModName, StringComparer.OrdinalIgnoreCase )
+				.Select( AggregateSource ).ToArray();
+
+			if ( writers.Length < 2 )
+				continue;
+
+			XmlOverrideDefinitionKey key = sections[0].Key;
+
+			// Show one conflict row for the item. Each mod keeps its item or item_extension type.
+			if ( !sameType )
+				key = key with { Container = "items", DefinitionType = "item" };
+
+			IReadOnlyList<XmlVariantCompetition>? competitions = null;
+			bool comparable = writers.All( source => source.ConflictModes.All( mode => mode is "default" or "extend" )
+				&& source.EquipmentVariants != null && source.VariantDefinitionType != null );
+
+			if ( comparable )
+			{
+				var pairs = new List<XmlVariantCompetition>();
+
+				for ( int i = 0; i < writers.Length; i++ )
+					for ( int j = i + 1; j < writers.Length; j++ )
+					{
+						AggregatedDefinition left = writers[i];
+						AggregatedDefinition right = writers[j];
+						bool itemLists = left.VariantDefinitionType == "item" && right.VariantDefinitionType == "item";
+
+						// The game uses one complete item list, even when the lists cover different equipment.
+						if ( itemLists )
+						{
+							if ( left.Parameters["variants"] != right.Parameters["variants"] )
+								pairs.Add( new( left.Source.ModName, right.Source.ModName, true, XmlVariantInteraction.ItemLists ) );
+
+							continue;
+						}
+
+						bool? overlap = XmlEquipmentVariantAnalysis.Compete( left.EquipmentVariants!, right.EquipmentVariants!,
+							key.Context, itemCategories );
+
+						if ( overlap != false )
+							pairs.Add( new( left.Source.ModName, right.Source.ModName, overlap == true,
+								left.VariantDefinitionType == right.VariantDefinitionType
+									? XmlVariantInteraction.EquipmentRules : XmlVariantInteraction.ExtensionOverItem ) );
+					}
+
+				if ( pairs.Count == 0 )
+					continue;
+
+				competitions = pairs;
+
+				if ( sameType && key.DefinitionType == "item_extension" )
+					writers = writers.Where( source => pairs.Any( pair => pair.LeftMod == source.Source.ModName
+						|| pair.RightMod == source.Source.ModName ) ).ToArray();
+			}
+			else if ( writers.Select( source => source.Parameters["variants"] ).Distinct( StringComparer.Ordinal ).Count() < 2 )
+				continue;
+
+			yield return new( key, "variants", false,
+				writers.Select( source => source.ToConflictSource( source.Parameters["variants"] ) ).ToArray(), competitions );
+		}
 	}
 
 	// Later sections override earlier parameters. Variant sections in an item extension accumulate;
@@ -678,19 +770,35 @@ internal static class XmlOverrideConflictAnalyzer
 
 		XmlOverrideDefinition[] variantSections = definitions.Where( definition => definition.Parameters.ContainsKey( "variants" ) )
 			.OrderBy( definition => definition.DeclarationOrder ).ToArray();
-		bool additiveSections = definitions[0].Key.DefinitionType == "item_extension"
-			&& definitions.All( definition => definition.ConflictMode is "" or "default" );
+		string? variantDefinitionType = definitions.Select( definition => definition.Key.DefinitionType ).Distinct().Count() == 1
+			? definitions[0].Key.DefinitionType : null;
+		bool additiveSections = variantDefinitionType == "item_extension"
+			&& definitions.All( definition => definition.ConflictMode is "" or "default" or "extend" );
 
-		if ( additiveSections && variantSections.Length > 1 )
+		// Keep every list when the sections add up, or when they mix item and item_extension.
+		if ( ( additiveSections || variantDefinitionType == null ) && variantSections.Length > 1 )
 			parameters["variants"] = string.Join( "|", variantSections.Select( definition => definition.Parameters["variants"] ) );
 
 		bool orderedSections = variantSections.Length <= 1 || variantSections.All( definition => definition.DeclarationOrder.HasValue )
 			&& variantSections.Select( definition => definition.DeclarationOrder ).Distinct().Count() == variantSections.Length;
-		XmlEquipmentVariants? equipmentVariants = definitions.Length == 1 ? definitions[0].EquipmentVariants
-			: additiveSections && orderedSections && variantSections.Length > 0
-				&& definitions.All( definition => SameXmlResource( definition.Source, definitions[0].Source ) )
-				&& variantSections.All( definition => definition.EquipmentVariants != null )
-				? new XmlEquipmentVariants( variantSections.SelectMany( definition => definition.EquipmentVariants!.Rules ).ToArray() ) : null;
+		// Use declaration order only when all sections come from the same XML file.
+		bool knownSections = orderedSections && variantSections.Length > 0
+			&& definitions.All( definition => SameXmlResource( definition.Source, definitions[0].Source ) )
+			&& variantSections.All( definition => definition.EquipmentVariants != null );
+		XmlEquipmentVariants? equipmentVariants = null;
+
+		// Each item_extension section adds its rules. An empty section leaves earlier rules in place.
+		if ( knownSections && additiveSections )
+			equipmentVariants = new( variantSections.SelectMany( definition => definition.EquipmentVariants!.Rules ).ToArray() );
+		else if ( knownSections && variantDefinitionType == "item"
+			&& definitions.OrderBy( definition => definition.DeclarationOrder ).Skip( 1 )
+				.All( definition => definition.ConflictMode == "extend" ) )
+		{
+			// Use the last explicit variants list, including an empty list that clears earlier rules.
+			// A section without variants leaves the previous list in place.
+			equipmentVariants = variantSections[^1].EquipmentVariants;
+			parameters["variants"] = variantSections[^1].Parameters["variants"];
+		}
 
 		return new AggregatedDefinition(
 			definitions[0].Source,
@@ -702,7 +810,7 @@ internal static class XmlOverrideConflictAnalyzer
 				.Distinct( StringComparer.OrdinalIgnoreCase )
 				.ToArray(),
 			definitions.Select( definition => string.IsNullOrWhiteSpace( definition.ConflictMode ) ? "default" : definition.ConflictMode )
-				.Distinct( StringComparer.OrdinalIgnoreCase ).ToArray(), equipmentVariants, definitions.Length );
+				.Distinct( StringComparer.OrdinalIgnoreCase ).ToArray(), equipmentVariants, definitions.Length, variantDefinitionType );
 	}
 
 	private static bool SameXmlResource( XmlOverrideSource left, XmlOverrideSource right ) =>
@@ -717,8 +825,9 @@ internal static class XmlOverrideConflictAnalyzer
 	private static XmlEquipmentVariants? ReadEquipmentVariants( XElement definition )
 	{
 		XElement[] lists = definition.Elements().Where( element => element.Name.LocalName.Equals( "variants", StringComparison.OrdinalIgnoreCase ) ).ToArray();
-
-		if ( lists.Length == 0 || lists.Any( list => list.HasAttributes || !list.HasElements ) )
+		// Treat <variants/> as an empty list. Return null when the list is missing or cannot be read.
+		if ( lists.Length == 0 || lists.Any( list => list.HasAttributes
+			|| !list.HasElements && !string.IsNullOrWhiteSpace( list.Value ) ) )
 			return null;
 
 		var rules = new List<XmlEquipmentRule>();
@@ -739,7 +848,7 @@ internal static class XmlOverrideConflictAnalyzer
 				.Distinct( StringComparer.Ordinal ).ToArray() ) );
 		}
 
-		return rules.Count == 0 ? null : new XmlEquipmentVariants( rules.ToArray() );
+		return new XmlEquipmentVariants( rules.ToArray() );
 	}
 
 	// The definition's identity and on_conflict setting control how it is applied; compare its remaining values.
@@ -905,9 +1014,10 @@ internal static class XmlOverrideConflictAnalyzer
 		IReadOnlyList<string> ResourcePaths,
 		IReadOnlyList<string> ConflictModes,
 		XmlEquipmentVariants? EquipmentVariants,
-		int DeclarationCount )
+		int DeclarationCount,
+		string? VariantDefinitionType )
 	{
 		public XmlOverrideConflictSource ToConflictSource( string value )
-			=> new( Source, ConflictMode, value, ResourcePaths, ConflictModes, EquipmentVariants, DeclarationCount );
+			=> new( Source, ConflictMode, value, ResourcePaths, ConflictModes, EquipmentVariants, DeclarationCount, VariantDefinitionType );
 	}
 }

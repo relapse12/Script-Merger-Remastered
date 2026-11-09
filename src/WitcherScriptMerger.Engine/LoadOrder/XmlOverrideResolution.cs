@@ -1,4 +1,5 @@
 using WitcherScriptMerger.Inventory;
+using WitcherScriptMerger.FileIndex;
 
 namespace WitcherScriptMerger.LoadOrder;
 
@@ -24,4 +25,5 @@ internal sealed record XmlOverrideResolution(
 	string DefaultSource = null,
 	string ExtensionSource = null );
 
-internal sealed record XmlVariantResolution( FileHash Left, FileHash Right, FileHash Winner, bool FixedOrder );
+internal sealed record XmlVariantResolution( FileHash Left, FileHash Right, FileHash Winner, bool FixedOrder,
+	XmlVariantInteraction Interaction = XmlVariantInteraction.EquipmentRules );

@@ -125,7 +125,7 @@ public class ModFile
 		}
 	}
 
-	// Only overlapping pairs compete. Several enabled variants can coexist if every conflicting pair has a disabled side.
+	// Disabled mods and replaced item lists can leave no appearance conflicts to show.
 	private bool HasNoActiveVariantPair( CustomLoadOrder order )
 	{
 		return Mods.FirstOrDefault()?.XmlOverrideInfo?.VariantCompetitions is { Count: > 0 }

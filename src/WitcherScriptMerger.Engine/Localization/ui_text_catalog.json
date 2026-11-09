@@ -8109,6 +8109,16 @@
     "english": "The candidate winner contains the source attribute value.",
     "formatted": false
   },
+  "XmlDefinitionDiagnostics.2db99b3243af0dcc": {
+    "context": "XmlDefinitionDiagnostics",
+    "english": "{0} extends the following items before {1} defines them. Some item properties may be missing.",
+    "formatted": true
+  },
+  "XmlDefinitionDiagnostics.71410a4312d7e9c5": {
+    "context": "XmlDefinitionDiagnostics",
+    "english": "The default definitions from {0} are disabled. {1} extends the following items.\nEnable {0} before using the extension.",
+    "formatted": true
+  },
   "XmlDefinitionDiagnostics.82fab80cd569d2c6": {
     "context": "XmlDefinitionDiagnostics",
     "english": "{0} extends this item before {1} registers its default definition. The item loads with incomplete definition data.",
@@ -8118,6 +8128,11 @@
     "context": "XmlDefinitionDiagnostics",
     "english": "XML definition order \u2014 item \u0022{0}\u0022 ({1})",
     "formatted": true
+  },
+  "XmlDefinitionDiagnostics.d91d2457ab1ef192": {
+    "context": "XmlDefinitionDiagnostics",
+    "english": "XML definition order",
+    "formatted": false
   },
   "XmlDefinitionDiagnostics.dd8ad9c34a044865": {
     "context": "XmlDefinitionDiagnostics",
@@ -8169,6 +8184,16 @@
     "english": "Mod.io Priority: {0}={2} \u00B7 {1}={3} (lower wins)",
     "formatted": true
   },
+  "XmlOverrideToolTips.2d791e8467e425d2": {
+    "context": "XmlOverrideToolTips",
+    "english": "When both equipment rules match, {0}\u0027s item_extension appearance wins over {1}\u0027s item appearance.",
+    "formatted": true
+  },
+  "XmlOverrideToolTips.3381f130e4beec65": {
+    "context": "XmlOverrideToolTips",
+    "english": "empty item appearance list (clears item-owned rules)",
+    "formatted": false
+  },
   "XmlOverrideToolTips.42750654b1dc8c97": {
     "context": "XmlOverrideToolTips",
     "english": "{0} has priority over {1}: later extend; XML DLC name \u0022{2}\u0022 sorts after \u0022{3}\u0022.",
@@ -8203,6 +8228,11 @@
     "context": "XmlOverrideToolTips",
     "english": "When both equipment rules match, {0}\u0027s appearance wins over {1}.",
     "formatted": true
+  },
+  "XmlOverrideToolTips.65b244c064c1279a": {
+    "context": "XmlOverrideToolTips",
+    "english": "The active item list or item_extension source is uncertain.",
+    "formatted": false
   },
   "XmlOverrideToolTips.67de83c6c6e70cd0": {
     "context": "XmlOverrideToolTips",
@@ -8254,6 +8284,11 @@
     "english": "XML order: {0} \u2192 {1}",
     "formatted": true
   },
+  "XmlOverrideToolTips.bfede9fdaa818239": {
+    "context": "XmlOverrideToolTips",
+    "english": "The item appearance list used between {0} and {1} could not be determined.",
+    "formatted": true
+  },
   "XmlOverrideToolTips.c03735714101c6f8": {
     "context": "XmlOverrideToolTips",
     "english": "{0} has priority over {1} (Mod.io over conventional DLC).",
@@ -8262,6 +8297,11 @@
   "XmlOverrideToolTips.c0f5a70828999054": {
     "context": "XmlOverrideToolTips",
     "english": "{0} (on_conflict={1}): {2}.",
+    "formatted": true
+  },
+  "XmlOverrideToolTips.c25a1a8442316e1b": {
+    "context": "XmlOverrideToolTips",
+    "english": "{0}\u0027s item appearance list is used. The list from {1} does not apply.",
     "formatted": true
   },
   "XmlOverrideToolTips.c789604607e3911d": {
@@ -8288,5 +8328,15 @@
     "context": "XmlOverrideToolTips",
     "english": "{0} \u0022{1}\u0022 \u2014 {2}.",
     "formatted": true
+  },
+  "XmlOverrideToolTips.e7ea30324fec14aa": {
+    "context": "XmlOverrideToolTips",
+    "english": "empty appearance list (keeps earlier rules)",
+    "formatted": false
+  },
+  "XmlOverrideToolTips.f897027745bd356d": {
+    "context": "XmlOverrideToolTips",
+    "english": "item_extension rules take precedence over item-owned rules regardless of DLC registration order.",
+    "formatted": false
   }
 }

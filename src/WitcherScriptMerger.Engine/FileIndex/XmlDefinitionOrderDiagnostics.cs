@@ -48,31 +48,51 @@ internal static class XmlDefinitionOrderDiagnostics
 		return result;
 	}
 
+	// Group matching warnings for the same two mods and list each affected item once.
 	internal static IReadOnlyList<string> Format( IEnumerable<ModFile> files, IEnumerable<ModLoadSetting> settings )
 	{
 		ModLoadSetting[] currentSettings = settings?.ToArray() ?? Array.Empty<ModLoadSetting>();
-
-		return files.Where( file => ReferenceEquals( file.Category, Categories.XmlDefinitionOverride ) )
+		var issues = files.Where( file => ReferenceEquals( file.Category, Categories.XmlDefinitionOverride ) )
 			.Select( file => (File: file, Resolution: CustomLoadOrder.ResolveXmlOverridePolicyForSettings( currentSettings, file )) )
-			.Where( value => value.Resolution.Outcome is XmlOverrideOutcome.ExtensionBeforeDefault or XmlOverrideOutcome.DisabledDefaultDefinition )
-			.GroupBy( value => value.File.Mods[0].XmlOverrideInfo.Key.ComparisonKey, StringComparer.OrdinalIgnoreCase )
-			.OrderBy( group => group.Key, StringComparer.OrdinalIgnoreCase )
-			.Select( group =>
-			{
-				var issue = group.First();
-				var key = issue.File.Mods[0].XmlOverrideInfo.Key;
-				string explanation = issue.Resolution.Outcome == XmlOverrideOutcome.DisabledDefaultDefinition
-					? UiText.Format(
-						"XmlDefinitionDiagnostics",
-						"The default definition from {0} is disabled. {1} extends this item.\nEnable the default definition before using the extension.",
-						issue.Resolution.DefaultSource,
-						issue.Resolution.ExtensionSource )
-					: UiText.Format( "XmlDefinitionDiagnostics",
-						"{0} extends this item before {1} registers its default definition. The item loads with incomplete definition data.",
-						issue.Resolution.ExtensionSource, issue.Resolution.DefaultSource );
+			.Where( value => value.Resolution.Outcome is XmlOverrideOutcome.ExtensionBeforeDefault
+				or XmlOverrideOutcome.DisabledDefaultDefinition );
+		var groups = issues.GroupBy( issue => (
+			issue.Resolution.Outcome,
+			issue.Resolution.ExtensionSource,
+			issue.Resolution.DefaultSource ) )
+			.OrderBy( group => group.Key.ExtensionSource, StringComparer.OrdinalIgnoreCase )
+			.ThenBy( group => group.Key.DefaultSource, StringComparer.OrdinalIgnoreCase )
+			.ThenBy( group => group.Key.Outcome );
+		var result = new List<string>();
 
-				return UiText.Format( "XmlDefinitionDiagnostics", "XML definition order — item \"{0}\" ({1})", key.Identity, key.Context )
-					+ Environment.NewLine + explanation.ReplaceLineEndings( Environment.NewLine );
-			} ).ToArray();
+		foreach ( var group in groups )
+		{
+			string explanation = group.Key.Outcome == XmlOverrideOutcome.DisabledDefaultDefinition
+				? UiText.Format(
+					"XmlDefinitionDiagnostics",
+					"The default definitions from {0} are disabled. {1} extends the following items.\nEnable {0} before using the extension.",
+					group.Key.DefaultSource,
+					group.Key.ExtensionSource )
+				: UiText.Format(
+					"XmlDefinitionDiagnostics",
+					"{0} extends the following items before {1} defines them. Some item properties may be missing.",
+					group.Key.ExtensionSource,
+					group.Key.DefaultSource );
+			var lines = new List<string>
+			{
+				UiText.T( "XmlDefinitionDiagnostics", "XML definition order" ),
+				explanation.ReplaceLineEndings( Environment.NewLine )
+			};
+			var items = group.Select( issue => issue.File.Mods[0].XmlOverrideInfo.Key.Identity )
+				.Distinct( StringComparer.OrdinalIgnoreCase )
+				.OrderBy( name => name, StringComparer.OrdinalIgnoreCase );
+
+			lines.Add( "" );
+			lines.AddRange( items.Select( name => "  - " + name ) );
+
+			result.Add( string.Join( Environment.NewLine, lines ) );
+		}
+
+		return result;
 	}
 }
