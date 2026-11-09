@@ -227,6 +227,10 @@ internal static class BlobMergeValidation
 		{
 			List<MergeModule> referenceModules = ReferenceModules();
 			SourceFile[] references = RequiredReferences( referenceModules );
+
+			diagnostics.AddRange( MissingLooseParents( project, loaded.Vanilla.Concat( references ) ) );
+			ThrowErrors( diagnostics );
+
 			string environmentKey = EnvironmentKey( references );
 			string identity = BlobMergeArtifacts.Identity( new
 			{
@@ -328,6 +332,34 @@ internal static class BlobMergeValidation
 				completed[outputKey] = values;
 			}
 		}
+	}
+
+	// The game needs the extends declaration to recognize inherited functions and fields.
+	internal static IReadOnlyList<Diagnostic> MissingLooseParents(
+		IEnumerable<SourceFile> files, IEnumerable<SourceFile> baseline )
+	{
+		var parents = baseline.SelectMany( file => file.Items ).OfType<ClassItem>()
+			.Where( item => !item.Decl.IsStruct && item.Decl.StateMachineOf is null && item.Decl.Parent is not null )
+			.GroupBy( item => item.Decl.Name, StringComparer.Ordinal )
+			.ToDictionary( group => group.Key, group => group.First().Decl.Parent, StringComparer.Ordinal );
+		var result = new List<Diagnostic>();
+
+		foreach ( SourceFile file in files )
+		{
+			foreach ( ClassDecl declaration in file.Items.OfType<ClassItem>().Select( item => item.Decl ) )
+			{
+				if ( declaration.IsStruct || declaration.StateMachineOf is not null || declaration.Parent is not null
+					|| !parents.TryGetValue( declaration.Name, out string? parent )
+					|| parent is null or "CObject" or "IScriptable" )
+					continue;
+
+				result.Add( new( "error", "V006", file.Path, declaration.Line,
+					$"The loose declaration of '{declaration.Name}' omits its base class '{parent}'. "
+					+ $"This output needs 'extends {parent}' to preserve inherited members and casts." ) );
+			}
+		}
+
+		return result;
 	}
 
 	// WSCompiler accepts some syntax the game rejects in loose scripts. Catch those cases before applying the merge.
