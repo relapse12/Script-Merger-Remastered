@@ -50,7 +50,7 @@ public static class BlobReferences
         }
     }
 
-    // Compilation references need signatures only, so these functions have no bodies.
+    // Read signatures and whether each method has an implementation.
     public static SourceFile Read(string path)
         => Read(ScriptBlob.Open(path));
     public static SourceFile Read(byte[] data, string identity) => Read(ScriptBlob.FromBytes(data, identity));
@@ -124,9 +124,12 @@ public static class BlobReferences
     {
         Name = f.Name, Params = f.Params.Select(p => new Param(p.Name, Type(p.Type), (p.Flags & 0x200) != 0, (p.Flags & 0x400) != 0)).ToList(),
         ReturnType = f.Return.Count > 0 ? Type(f.Return[0].Type) : null,
+        // 0x200 marks a method with no body. An empty body has no bytecode either, so check the flag,
+        // Methods with a body get an empty list, as source references do.
+        Body = (f.Flags & 0x200) == 0 || f.Code.Length > 0 ? [] : null,
         Specifiers = new()
         {
-            IsImport = (f.Flags & 1) != 0 || (f.Flags & 0x200) != 0 && f.Code.Length == 0,
+            IsImport = (f.Flags & 1) != 0,
             IsFinal = (f.Flags & 0x10) != 0, IsEvent = (f.Flags & 0x20) != 0,
             IsLatent = (f.Flags & 0x40) != 0, IsEntry = (f.Flags & 0x80) != 0, IsTimer = (f.Flags & 0x400) != 0,
             IsExec = (f.Flags & 0x100) != 0, IsQuest = (f.Flags & 0x1000) != 0, IsCleanup = (f.Flags & 0x2000) != 0,
