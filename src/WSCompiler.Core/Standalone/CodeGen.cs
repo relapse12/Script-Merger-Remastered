@@ -495,7 +495,11 @@ public sealed partial class FunctionCompiler
     {
         if (_locals.TryGetValue(name, out var local)) return new LocalVar(local);
         if (_params.TryGetValue(name, out var param)) return new ParamVar(param);
-        if (_thisClass is not null && _symbols.FindField(_thisClass, name) is { } field) return new FieldVar(field);
+		if ( _thisClass is not null && _symbols.FindField( _thisClass, name ) is { } field )
+		{
+			CheckFieldAccess( field );
+			return new FieldVar( field );
+		}
         if (_symbols.EnumMembers.TryGetValue(name, out string? enumName))
             return new EnumConstant(enumName, _symbols.Enums[enumName].ValueOf(name)
                 ?? throw Fail($"enum member '{name}' has no resolved value"));
@@ -517,11 +521,35 @@ public sealed partial class FunctionCompiler
         return _symbols.Classes.GetValueOrDefault(cls)?.StateMachine ?? throw Fail($"'parent' used outside a state ({cls})");
     }
 
-    private FieldInfo FieldOf(Ty ty, string name)
-    {
-        if (ty.Kind is not (TyKind.Class or TyKind.Struct)) throw Fail($"'{name}' is not a member of {ty}");
-        return _symbols.FindField(ty.Name, name) ?? throw Fail($"{ty.Name} has no member '{name}'");
-    }
+	private FieldInfo FieldOf( Ty ty, string name )
+	{
+		if ( ty.Kind is not ( TyKind.Class or TyKind.Struct ) )
+			throw Fail( $"'{name}' is not a member of {ty}" );
+
+		var field = _symbols.FindField( ty.Name, name ) ?? throw Fail( $"{ty.Name} has no member '{name}'" );
+		CheckFieldAccess( field );
+		return field;
+	}
+
+	private void CheckFieldAccess( FieldInfo field )
+	{
+		// Annotation methods use their target class
+		if ( _thisClass == field.Owner )
+			return;
+
+		bool inaccessible = field.Visibility == Visibility.Private;
+		if ( field.Visibility == Visibility.Protected )
+		{
+			// A state can use protected fields of its state machine and its base classes.
+			string? stateMachine = _thisClass is null ? null : _symbols.Classes.GetValueOrDefault( _thisClass )?.StateMachine;
+			bool protectedAccess = _thisClass is not null && _symbols.IsSubclass( _thisClass, field.Owner )
+				|| stateMachine is not null && _symbols.IsSubclass( stateMachine, field.Owner );
+			inaccessible = !protectedAccess;
+		}
+
+		if ( inaccessible )
+			throw Fail( $"Cannot access {field.Visibility.ToString().ToLowerInvariant()} property '{field.Name}' in class '{field.Owner}' here." );
+	}
 
     private Ty TypeOf(Expr expr)
     {

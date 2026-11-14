@@ -43,7 +43,8 @@ public sealed record Ty(TyKind Kind, string Name = "", Ty? Element = null, Ty? K
     };
 }
 
-public sealed record FieldInfo(string Name, Ty Type, string Owner, bool IsBindable = false, bool IsImport = false, bool IsConst = false);
+public sealed record FieldInfo( string Name, Ty Type, string Owner, bool IsBindable = false,
+	bool IsImport = false, bool IsConst = false, Visibility Visibility = Visibility.Default );
 
 public sealed record ParamInfo(string Name, Ty Type, bool IsOptional, bool IsOut);
 
@@ -253,7 +254,9 @@ public sealed class Symbols
                 foreach (var field in decl.Fields)
                 {
                     var ty = Resolve(field.Type);
-                    foreach (string name in field.Names) AddField(key, name, ty, field.IsBinding, field.Specifiers.IsImport, field.Specifiers.IsConst || field.IsBinding);
+					foreach ( string name in field.Names )
+						AddField( key, name, ty, field.IsBinding, field.Specifiers.IsImport,
+							field.Specifiers.IsConst || field.IsBinding, field.Specifiers.Visibility );
                 }
                 foreach (var method in decl.Methods)
                 {
@@ -278,7 +281,8 @@ public sealed class Symbols
             {
                 if (field.Annotation?.Class is not { } cls) break;
                 var ty = Resolve(field.Type);
-                foreach (string name in field.Names) AddField(cls, name, ty, isConst: field.Specifiers.IsConst);
+				foreach ( string name in field.Names )
+					AddField( cls, name, ty, isConst: field.Specifiers.IsConst, visibility: field.Specifiers.Visibility );
                 break;
             }
         }
@@ -401,12 +405,15 @@ public sealed class Symbols
         }
     }
 
-    private void AddField(string cls, string name, Ty ty, bool bindable = false, bool isImport = false, bool isConst = false)
-    {
-        if (!Classes.TryGetValue(cls, out var info) || info.Fields.ContainsKey(name)) return;
-        info.FieldOrder.Add(name);
-        info.Fields[name] = new FieldInfo(name, ty, cls, bindable, isImport, isConst);
-    }
+	private void AddField( string cls, string name, Ty ty, bool bindable = false,
+		bool isImport = false, bool isConst = false, Visibility visibility = Visibility.Default )
+	{
+		if ( !Classes.TryGetValue( cls, out var info ) || info.Fields.ContainsKey( name ) )
+			return;
+
+		info.FieldOrder.Add( name );
+		info.Fields[name] = new FieldInfo( name, ty, cls, bindable, isImport, isConst, visibility );
+	}
 
     public FunctionInfo FunctionInfoOf(FunctionDecl decl, string? owner)
     {

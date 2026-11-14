@@ -114,11 +114,17 @@ public static class BlobReferences
         return separator < 0 ? text.Length : separator;
     }
 
-    private static FieldDecl Field(ScriptProperty p) => new()
-    {
-        Names = [p.Name], Type = Type(p.Type), IsBinding = (p.Flags & 0x80000) != 0,
-        Specifiers = new() { IsImport = (p.Flags & 0x4000) != 0, IsConst = (p.Flags & 2) != 0, IsSaved = (p.Flags & 0x8000) != 0 }
-    };
+	private static FieldDecl Field( ScriptProperty p ) => new()
+	{
+		Names = [p.Name], Type = Type( p.Type ), IsBinding = ( p.Flags & 0x80000 ) != 0,
+		Specifiers = new()
+		{
+			IsImport = ( p.Flags & 0x4000 ) != 0, IsConst = ( p.Flags & 2 ) != 0, IsSaved = ( p.Flags & 0x8000 ) != 0,
+			Visibility = ( p.Flags & 0x10000 ) != 0 ? Visibility.Private
+				: ( p.Flags & 0x20000 ) != 0 ? Visibility.Protected
+				: ( p.Flags & 0x40000 ) != 0 ? Visibility.Public : Visibility.Default
+		}
+	};
 
     private static FunctionDecl Function(ScriptFunction f) => new()
     {
