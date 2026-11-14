@@ -62,6 +62,10 @@ public static class Lexer
             else if (c == '"' || c == '\'')
             {
                 string text = LexQuoted(source, ref pos, c, ref line);
+				// REDkit also permits spaces and dots inside name literals.
+				if ( c == '\'' && !lenient && text.Any( value => !IsIdentPart( value ) && value is not ( ' ' or '.' ) ) )
+					throw new ScriptSyntaxException( "Name literal may contain only ASCII letters, digits, underscores, spaces and dots.", tokenLine );
+
                 tokens.Add(new Token(c == '"' ? TokKind.Str : TokKind.Name, text, tokenLine));
             }
             else
