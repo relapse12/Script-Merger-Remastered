@@ -727,11 +727,13 @@ public sealed class Parser
                 string member = Identifier();
                 expr = new Expr(new Member(expr, member), PrevLine);
             }
-            else if (EatPunct("("))
-            {
-                var args = Arguments();
-                expr = new Expr(new Call(expr, args), PrevLine);
-            }
+			else if ( EatPunct( "(" ) )
+			{
+				var args = Arguments();
+				// Native scripts allow empty parentheses after a completed call.
+				if ( expr.Kind is not Call || args.Count > 0 )
+					expr = new Expr( new Call( expr, args ), PrevLine );
+			}
             else if (EatPunct("["))
             {
                 var idx = ParseExpr();
