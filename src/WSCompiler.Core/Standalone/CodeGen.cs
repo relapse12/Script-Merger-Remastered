@@ -84,14 +84,18 @@ public sealed partial class FunctionCompiler
     // Continue collecting statement errors before reporting the function's failures.
     public static CompiledBody Compile(Symbols symbols, Tables tables, FunctionDecl decl, string? thisClass, Wrap wrap, Action<int, string>? warn = null)
     {
+		bool isEvent = decl.Specifiers.IsEvent || wrap.Target?.Specifiers.IsEvent == true;
+		if ( isEvent && decl.ReturnType is { } declared && symbols.Resolve( declared ).Kind != TyKind.Void )
+			throw new CompileException( $"Event function '{decl.Name}' should not have an explicit return type. It is implicitly always bool.", decl.Line );
+
         var raw = new List<(string, TypeRef)>();
         if (decl.Body is not null) CollectLocals(decl.Body, raw);
         var locals = raw.Select(l => (l.Item1, symbols.Resolve(l.Item2))).ToList();
 
         var parms = new Dictionary<string, Ty>();
         foreach (var p in decl.Params) parms[p.Name] = symbols.Resolve(p.Type);
-        var ret = decl.ReturnType is { } rt ? symbols.Resolve(rt)
-            : decl.Specifiers.IsEvent ? Ty.Bool : wrap.Target?.ReturnType ?? Ty.Void;
+		var ret = isEvent ? Ty.Bool : decl.ReturnType is null && wrap.Target is { } target
+			? target.ReturnType : symbols.ReturnTypeOf( decl );
 
         var localMap = new Dictionary<string, Ty>();
         foreach (var (name, ty) in locals) localMap[name] = ty;

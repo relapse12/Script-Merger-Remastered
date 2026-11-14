@@ -420,7 +420,7 @@ public sealed class Symbols
         try
         {
             var ps = decl.Params.Select(p => new ParamInfo(p.Name, Resolve(p.Type), p.IsOptional, p.IsOut)).ToList();
-            var ret = decl.ReturnType is { } rt ? Resolve(rt) : decl.Specifiers.IsEvent ? Ty.Bool : Ty.Void;
+			var ret = ReturnTypeOf( decl );
             return new FunctionInfo { Name = decl.Name, Owner = owner, Params = ps, ReturnType = ret, Specifiers = decl.Specifiers };
         }
         catch (CompileException ex)
@@ -428,6 +428,13 @@ public sealed class Symbols
             throw new CompileException($"{decl.Name}: {ex.Message}");
         }
     }
+
+	public Ty ReturnTypeOf( FunctionDecl declaration )
+	{
+		var declared = declaration.ReturnType is { } type ? Resolve( type ) : Ty.Void;
+		// Events keep their implicit Boolean return even when written with : void.
+		return declaration.Specifiers.IsEvent && declared.Kind == TyKind.Void ? Ty.Bool : declared;
+	}
 
     public Ty Resolve(TypeRef type)
     {
