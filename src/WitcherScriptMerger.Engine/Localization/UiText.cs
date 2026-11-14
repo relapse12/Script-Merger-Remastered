@@ -302,9 +302,20 @@ internal static partial class UiText
 		return tokens.Order( StringComparer.Ordinal ).ToArray();
 	}
 
+	// Script Merger's text comes first, then the Annotation Inspector's, each sorted by key.
+	private static IEnumerable<(string Title, KeyValuePair<string, TextEntry>[] Entries)> TemplateSections()
+	{
+		var ordered = Catalog.OrderBy( item => item.Key, StringComparer.Ordinal ).ToArray();
+		bool Inspector( KeyValuePair<string, TextEntry> item ) => item.Value.Context.StartsWith( "Inspector.", StringComparison.Ordinal );
+
+		yield return ("Script Merger Remastered", ordered.Where( item => !Inspector( item ) ).ToArray());
+		yield return ("Annotation Inspector", ordered.Where( Inspector ).ToArray());
+	}
+
+	// Keep JSON entries in the same tool order as the CSV template.
 	internal static void ExportTemplate( string path )
 	{
-		var entries = Catalog.ToDictionary( item => item.Key, item => new
+		var entries = TemplateSections().SelectMany( section => section.Entries ).ToDictionary( item => item.Key, item => new
 		{
 			context = item.Value.Context,
 			english = item.Value.English,

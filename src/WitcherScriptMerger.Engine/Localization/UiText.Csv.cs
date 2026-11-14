@@ -12,14 +12,32 @@ internal static partial class UiText
 {
 	internal static readonly string[] CsvColumns = { "key", "context", "english", "translation", "developer_comment" };
 
+	// Allow older CSV files to include retired translation entries.
+	internal const int MaximumCsvRows = 20000;
+
+	// A row whose first field starts with this marker and whose other fields are empty is a section heading.
+	// Spreadsheet editors keep it as an ordinary row. "#" avoids the ";" column separator some locales use.
+	internal const string CsvSectionMarker = "#";
+
 	internal static void ExportCsvTemplate( string path )
 	{
 		var text = new StringBuilder();
 
 		AppendCsvRow( text, CsvColumns );
 
-		foreach ( var item in Catalog.OrderBy( item => item.Key, StringComparer.Ordinal ) )
-			AppendCsvRow( text, new[] { item.Key, item.Value.Context, item.Value.English, "", TranslatorComment( item.Value ) } );
+		bool first = true;
+
+		foreach ( var (title, entries) in TemplateSections() )
+		{
+			if ( !first )
+				text.Append( "\r\n" );
+
+			first = false;
+			text.Append( CsvSectionMarker ).Append( ' ' ).Append( title ).Append( ',', CsvColumns.Length - 1 ).Append( "\r\n" );
+
+			foreach ( var item in entries )
+				AppendCsvRow( text, new[] { item.Key, item.Value.Context, item.Value.English, "", TranslatorComment( item.Value ) } );
+		}
 
 		// A UTF-8 BOM lets spreadsheet editors recognize non-Latin translations.
 		WriteAtomically( path, "\uFEFF" + text );
@@ -60,8 +78,9 @@ internal static partial class UiText
 			if ( !seen.Add( key ) )
 				throw new InvalidDataException( "Duplicate CSV key: " + key );
 
+			// Like JSON packs, keep older CSV files usable when the application retires some of their keys.
 			if ( !Catalog.TryGetValue( key, out TextEntry? entry ) )
-				throw new InvalidDataException( "Unknown CSV key: " + key );
+				continue;
 
 			if ( row[ContextColumn] != entry.Context || NormalizeNewlines( row[EnglishColumn] ) != NormalizeNewlines( entry.English ) )
 				throw new InvalidDataException( "The context or English text has changed. Export a fresh template: " + key );
@@ -80,9 +99,7 @@ internal static partial class UiText
 			translations.Add( key, translated );
 		}
 
-		if ( seen.Count != Catalog.Count )
-			throw new InvalidDataException( "The CSV is missing catalog keys. Export a fresh template and edit only the translation column." );
-
+		// Keys added after the CSV was exported stay in English until the translator adds them.
 		return new( code, name, translations );
 	}
 
@@ -123,10 +140,14 @@ internal static partial class UiText
 		{
 			EndField();
 
-			if ( fields.Any( value => value.Length != 0 ) )
+			// A data row always has a key and English text, so it cannot be mistaken for a section heading.
+			bool heading = fields[0].StartsWith( CsvSectionMarker, StringComparison.Ordinal )
+				&& fields.Skip( 1 ).All( value => value.Length == 0 );
+
+			if ( !heading && fields.Any( value => value.Length != 0 ) )
 			{
-				if ( rows.Count > Catalog.Count )
-					throw new InvalidDataException( "The CSV has more rows than the current translation catalog." );
+				if ( rows.Count > MaximumCsvRows )
+					throw new InvalidDataException( "The CSV has too many rows." );
 
 				rows.Add( fields.ToArray() );
 			}

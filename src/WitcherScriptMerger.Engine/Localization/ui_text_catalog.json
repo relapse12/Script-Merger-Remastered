@@ -314,11 +314,6 @@
     "english": "The edited file changed after confirmation. Retry removing the merge: {0}",
     "formatted": true
   },
-  "BlobMerge.016d39db564c3bbd": {
-    "context": "BlobMerge",
-    "english": "The compiled merge needs updating. Refresh conflicts and create the affected merges again.",
-    "formatted": false
-  },
   "BlobMerge.02652ec30627c534": {
     "context": "BlobMerge",
     "english": "Merge unavailable: {0}",
@@ -327,6 +322,11 @@
   "BlobMerge.0b154064381d35eb": {
     "context": "BlobMerge",
     "english": "The merge inventory is missing managed entries. Restore the complete MergeInventory.xml backup before rebuilding these merges.",
+    "formatted": false
+  },
+  "BlobMerge.0c6d4a48e6a788cb": {
+    "context": "BlobMerge",
+    "english": "Checking merged files for edits",
     "formatted": false
   },
   "BlobMerge.0cfbb771906e7e7a": {
@@ -373,11 +373,6 @@
     "context": "BlobMerge",
     "english": "Remove the selected merges and associated script files? Unrelated merges will be kept.",
     "formatted": false
-  },
-  "BlobMerge.25083f80259db9d4": {
-    "context": "BlobMerge",
-    "english": "Linked scripts \u2014 {0}",
-    "formatted": true
   },
   "BlobMerge.2659a8999fff5c17": {
     "context": "BlobMerge",
@@ -444,9 +439,9 @@
     "english": "Select conflicts for these mods together:\n{0}",
     "formatted": true
   },
-  "BlobMerge.411f9b56855cbe9e": {
+  "BlobMerge.41ec4f92b885e015": {
     "context": "BlobMerge",
-    "english": "Output files:",
+    "english": "Delete the selected merges? The files below contain edits. Choose whether to back them up before deleting.",
     "formatted": false
   },
   "BlobMerge.45880276761bf009": {
@@ -469,6 +464,11 @@
     "english": "Vanilla script sources are required to recover and merge compiled edits.",
     "formatted": false
   },
+  "BlobMerge.515af38411149496": {
+    "context": "BlobMerge",
+    "english": "Delete without backup",
+    "formatted": false
+  },
   "BlobMerge.53cb23657ad2fde6": {
     "context": "BlobMerge",
     "english": "Validating merged scripts",
@@ -487,11 +487,6 @@
   "BlobMerge.5a088dedfb44ab76": {
     "context": "BlobMerge",
     "english": "Disabled scripts could not be reconciled: {0}",
-    "formatted": true
-  },
-  "BlobMerge.639ab05915ecdbfc": {
-    "context": "BlobMerge",
-    "english": "Also merges loose-script edits from {0} where they share these files.",
     "formatted": true
   },
   "BlobMerge.63e2bfe91f3a0b5b": {
@@ -514,11 +509,6 @@
     "english": "Script merge requirements",
     "formatted": false
   },
-  "BlobMerge.6b8c7dd5d745ddec": {
-    "context": "BlobMerge",
-    "english": "Comparing with original scripts",
-    "formatted": false
-  },
   "BlobMerge.6f1989e1e32c77dc": {
     "context": "BlobMerge",
     "english": "A script merge was interrupted. Close The Witcher 3 and refresh to recover it.",
@@ -539,11 +529,6 @@
     "english": "Validation details",
     "formatted": false
   },
-  "BlobMerge.78050b8652aebcd9": {
-    "context": "BlobMerge",
-    "english": "The conflicts below are resolved together. Recovering a compiled mod includes all scripts in its blob.",
-    "formatted": false
-  },
   "BlobMerge.7f414e19b873917a": {
     "context": "BlobMerge",
     "english": "Updated scripts",
@@ -554,11 +539,6 @@
     "english": "Verifying script comparisons",
     "formatted": false
   },
-  "BlobMerge.80c0b18067f3445d": {
-    "context": "BlobMerge",
-    "english": "Combines changes from {0}. The linked conflicts below are resolved together. Other listed mods remain unchanged.",
-    "formatted": true
-  },
   "BlobMerge.80cf2dd4a0782998": {
     "context": "BlobMerge",
     "english": "The compiled merge recovery information is missing from MergeInventory.xml. Restore the complete inventory before removing this merge.",
@@ -567,11 +547,6 @@
   "BlobMerge.80d017b288118a02": {
     "context": "BlobMerge",
     "english": "Applying merged scripts",
-    "formatted": false
-  },
-  "BlobMerge.814478cd32f2c500": {
-    "context": "BlobMerge",
-    "english": "This file is part of the same merge. The group checkbox selects all of its files.",
     "formatted": false
   },
   "BlobMerge.84bccddb22f13da7": {
@@ -619,11 +594,6 @@
     "english": "Merged source",
     "formatted": false
   },
-  "BlobMerge.a55f55549268c2ca": {
-    "context": "BlobMerge",
-    "english": "Delete anyway",
-    "formatted": false
-  },
   "BlobMerge.a59cbcc923a03c53": {
     "context": "BlobMerge",
     "english": "An active script already exists. The unclaimed disabled copy was kept: {0}",
@@ -643,16 +613,6 @@
     "context": "BlobMerge",
     "english": "Conflicts are shown under their original script file. The group checkbox selects the linked resolution.",
     "formatted": false
-  },
-  "BlobMerge.a8685798280a96b4": {
-    "context": "BlobMerge",
-    "english": "These merged files changed after they were created. Removing the merge will discard those changes.",
-    "formatted": false
-  },
-  "BlobMerge.ab36dc7ea6047b13": {
-    "context": "BlobMerge",
-    "english": "More than one folder matches {0}. The saved originals were kept. Remove the ambiguity before undoing this merge.",
-    "formatted": true
   },
   "BlobMerge.afe5ac2658296f9b": {
     "context": "BlobMerge",
@@ -707,11 +667,6 @@
   "BlobMerge.c0c938ca98e24e19": {
     "context": "BlobMerge",
     "english": "Merge validation failed",
-    "formatted": false
-  },
-  "BlobMerge.c2c043d9950bbb84": {
-    "context": "BlobMerge",
-    "english": "The conflicts below are resolved together. Recovering a compiled mod also includes its other scripts.",
     "formatted": false
   },
   "BlobMerge.c3f9d4e7b4ceaf7c": {
@@ -822,11 +777,6 @@
   "BlobMerge.fc98f515a6caa574": {
     "context": "BlobMerge",
     "english": "Caches were cleared. Refresh conflicts before merging.",
-    "formatted": false
-  },
-  "BlobMerge.fe250c2216b9c603": {
-    "context": "BlobMerge",
-    "english": "Other listed mods remain unchanged.",
     "formatted": false
   },
   "BlobMerge.fe31a08267c7008f": {
@@ -1052,16 +1002,6 @@
   "Categories.776157640eebe516": {
     "context": "Categories",
     "english": "Overlapping XML definition changes. The declared override policy controls field extension or whole-definition replacement.",
-    "formatted": false
-  },
-  "Categories.7f7805d55c5497de": {
-    "context": "Categories",
-    "english": "Overlapping compiled definitions. Hover a conflict for its cause and runtime priority.",
-    "formatted": false
-  },
-  "Categories.850d768f0627fa33": {
-    "context": "Categories",
-    "english": "Precompiled Script Symbols - Not Mergeable",
     "formatted": false
   },
   "Categories.90d56cd53202007c": {
@@ -1294,11 +1234,6 @@
     "english": "Tells the game whether to load any of this mod\u0027s files",
     "formatted": false
   },
-  "ConflictTree.d55a578521ba8b5f": {
-    "context": "ConflictTree",
-    "english": "The merge will let these changes run. This mod\u0027s files remain unchanged.",
-    "formatted": false
-  },
   "ConflictTree.dafad932ddccdb6f": {
     "context": "ConflictTree",
     "english": "Compiled script (.rsblob): replaces the wrapper\u0027s target.\nThe loose-script wrapper may be skipped.",
@@ -1444,21 +1379,6 @@
     "english": "Ready \u2014 W3Bundle executable found.",
     "formatted": false
   },
-  "DependencyForm.cb9b6a1d3102ade1": {
-    "context": "DependencyForm",
-    "english": "wcc_lite.exe (Optional)",
-    "formatted": false
-  },
-  "DependencyForm.cd86331a7484285b": {
-    "context": "DependencyForm",
-    "english": "Optional \u2014 required only when packing a bundled-XML merge.",
-    "formatted": false
-  },
-  "DependencyForm.dcc6d314efc071fa": {
-    "context": "DependencyForm",
-    "english": "Used only to pack bundled XML and metadata; select it from REDkit Dependencies or a compatible installation.",
-    "formatted": false
-  },
   "DiagnosticFlags.58d62b309f2aee71": {
     "context": "DiagnosticFlags",
     "english": "Script issues \u2014 see Diagnostics",
@@ -1569,11 +1489,6 @@
     "english": "The output file below already exists! Overwrite?\n\n{0}",
     "formatted": true
   },
-  "FileMerger.5fa31d3841732ec0": {
-    "context": "FileMerger",
-    "english": "There will still be a conflict if you use the merged mod name {0}.\n\nThe Witcher 3 loads mods in case-insensitive ASCII order, so this merged mod name will load after one of the original mods, and the merged file will be ignored.\n\nUse this name anyway?",
-    "formatted": true
-  },
   "FileMerger.65c235b0895a20e8": {
     "context": "FileMerger",
     "english": "Merge {0} of {1} was canceled.",
@@ -1642,11 +1557,6 @@
   "FileMerger.e177e80136f9478b": {
     "context": "FileMerger",
     "english": "Starting merge",
-    "formatted": false
-  },
-  "FileMerger.e93d3c98b258b10c": {
-    "context": "FileMerger",
-    "english": "Merged Mod Name Conflict",
     "formatted": false
   },
   "FileMerger.ed99c421ae7a98cc": {
@@ -4514,11 +4424,6 @@
     "english": "Inspect",
     "formatted": false
   },
-  "InspectorLaunch.d32404039870789c": {
-    "context": "InspectorLaunch",
-    "english": "Annotation Inspector is missing. Copy Tools/AnnotationInspector from the matching runtime package.",
-    "formatted": false
-  },
   "InspectorLaunch.e29531ec394cb841": {
     "context": "InspectorLaunch",
     "english": "Wait for the current operation to finish.",
@@ -4764,26 +4669,6 @@
     "english": "OK",
     "formatted": false
   },
-  "LoadOrderForm.3662d887fce62c4b": {
-    "context": "LoadOrderForm",
-    "english": "LoadOrderForm",
-    "formatted": false
-  },
-  "LoadOrderValidator.4f980ac6db945cbe": {
-    "context": "LoadOrderValidator",
-    "english": "{0}\n\nDetected custom load order in the file above, and merged files aren\u0027t configured to load first.\n\nWould you like Script Merger Remastered to modify your custom load order so that your merged files have top priority?",
-    "formatted": true
-  },
-  "LoadOrderValidator.c0fc36e0c4bf9820": {
-    "context": "LoadOrderValidator",
-    "english": "Custom Load Order Problem",
-    "formatted": false
-  },
-  "LoadOrderValidator.e14d46bb4a610a30": {
-    "context": "LoadOrderValidator",
-    "english": "Ne\u0026ver",
-    "formatted": false
-  },
   "MainForm.0103cc2bb13023b0": {
     "context": "MainForm",
     "english": "Output Folder Disabled",
@@ -4824,11 +4709,6 @@
     "english": "mods.settings could not be read, so nothing was merged and no files were changed.\n\nCorrect that file, then refresh conflicts.",
     "formatted": false
   },
-  "MainForm.0ef17dfec0832256": {
-    "context": "MainForm",
-    "english": "Merges have been removed successfully, but we were unable to automatically remove the generated merged mod folder: {0}; please remove the folder manually.",
-    "formatted": true
-  },
   "MainForm.11119fb492082c9a": {
     "context": "MainForm",
     "english": "Adds the selected file paths to Menu \u003E Permanent Ignore Rules, where they can be removed later.",
@@ -4842,11 +4722,6 @@
   "MainForm.13b35be9b0dc8733": {
     "context": "MainForm",
     "english": "Script conflicts: {0:N0}",
-    "formatted": true
-  },
-  "MainForm.13d111681f98dc02": {
-    "context": "MainForm",
-    "english": "Removing old merges failed:\n\n{0}\n\nThe app will stay open. Preserve any manual edits, then remove this directory manually:\n\n{1}",
     "formatted": true
   },
   "MainForm.1472d1e5a46977d1": {
@@ -4949,20 +4824,10 @@
     "english": "mods.settings: {0}",
     "formatted": true
   },
-  "MainForm.2eebbdf12212dfe5": {
-    "context": "MainForm",
-    "english": "Validating load order",
-    "formatted": false
-  },
   "MainForm.321572c402e00f02": {
     "context": "MainForm",
     "english": "Scan invalidated - refresh required",
     "formatted": false
-  },
-  "MainForm.32511df5f9c3b6da": {
-    "context": "MainForm",
-    "english": "Conflict totals include ignored conflicts and do not change with search filters. Scripts includes loose-script files and precompiled symbols, so it overlaps the mergeable/nonmergeable totals.\nScanned counts cover active mod/DLC content, excluding vanilla and the generated merged mod. XMLs are bundled resource occurrences; loose XML files are not counted.\n{0}",
-    "formatted": true
   },
   "MainForm.3417fa145f5f9bb0": {
     "context": "MainForm",
@@ -5059,11 +4924,6 @@
     "english": "Merging",
     "formatted": false
   },
-  "MainForm.581e8b9bbe58342c": {
-    "context": "MainForm",
-    "english": "Cleared {0} cached bundle listings. The next detailed conflict scan will rebuild the cache.",
-    "formatted": true
-  },
   "MainForm.595f5a124adc9969": {
     "context": "MainForm",
     "english": "Scanning\u2026",
@@ -5099,11 +4959,6 @@
     "english": "\n\nSome rollback steps also failed:\n{0}",
     "formatted": true
   },
-  "MainForm.662d5dd8aa4f6e44": {
-    "context": "MainForm",
-    "english": "The bundle index cache could not be cleared.\n\n{0}",
-    "formatted": true
-  },
   "MainForm.6632b98a34d67438": {
     "context": "MainForm",
     "english": "Refresh required",
@@ -5113,16 +4968,6 @@
     "context": "MainForm",
     "english": "Type part of a mod name. Press Ctrl\u002BF to focus or Esc to clear.",
     "formatted": false
-  },
-  "MainForm.6a50eb6f5e7f7a22": {
-    "context": "MainForm",
-    "english": "Removing old merges failed",
-    "formatted": false
-  },
-  "MainForm.6a5c84ddb09f1cc7": {
-    "context": "MainForm",
-    "english": "Existing merged files have no matching merge inventory:\n\n{0}\n\nRemove them so they can be recreated? Preserve any manual edits first. If you keep them, the app will stay open, but these files must be removed or their inventory restored before creating new merges.",
-    "formatted": true
   },
   "MainForm.6aa29457062d3ac2": {
     "context": "MainForm",
@@ -5204,11 +5049,6 @@
     "english": "Delete Selected Merges (Keyboard: D)",
     "formatted": false
   },
-  "MainForm.812809a7208de76e": {
-    "context": "MainForm",
-    "english": "Removing old merges failed:\n\n{0}\n\n{1} will now close. Try to remove this directory manually:\n\n{2}",
-    "formatted": true
-  },
   "MainForm.84942fdc175ed642": {
     "context": "MainForm",
     "english": "All files",
@@ -5217,21 +5057,6 @@
   "MainForm.858bc29121dbeb0c": {
     "context": "MainForm",
     "english": "Create \u0026All Script Merges",
-    "formatted": false
-  },
-  "MainForm.865327a40d125b81": {
-    "context": "MainForm",
-    "english": "Duplicate mod priorities detected",
-    "formatted": false
-  },
-  "MainForm.8669725063644af5": {
-    "context": "MainForm",
-    "english": "Old merges, not made by {0}, were found in the \u0022merged mods\u0022 directory:\n\n{1}\n\nOld merges should be removed. This is safe to do, unless you have made manual changes in this directory. Regular (non-manual) merges will be re-created automatically. If you do not remove the old merges, {2} will close.\n\nRemove the old merges now?",
-    "formatted": true
-  },
-  "MainForm.882d06823061985d": {
-    "context": "MainForm",
-    "english": "Remove old merges?",
     "formatted": false
   },
   "MainForm.88837677562422ee": {
@@ -5264,11 +5089,6 @@
     "english": "Repacking remaining bundled files",
     "formatted": false
   },
-  "MainForm.99edcb3880f24c9c": {
-    "context": "MainForm",
-    "english": "Cleared {0} cached bundle listing. The next detailed conflict scan will rebuild the cache.",
-    "formatted": true
-  },
   "MainForm.9a8d04a6b010c2f7": {
     "context": "MainForm",
     "english": "Please locate your Witcher 3 game directory.",
@@ -5277,11 +5097,6 @@
   "MainForm.9abc4e71aa19c118": {
     "context": "MainForm",
     "english": "Unable to Set Priority",
-    "formatted": false
-  },
-  "MainForm.9c8e206cf3fa5f03": {
-    "context": "MainForm",
-    "english": "Ne\u0026ver",
     "formatted": false
   },
   "MainForm.9cb30f608bf6c05e": {
@@ -5298,11 +5113,6 @@
     "context": "MainForm",
     "english": "Unknown Treeview: {0}",
     "formatted": true
-  },
-  "MainForm.9fa1291679e9c389": {
-    "context": "MainForm",
-    "english": "Repacking Bundles",
-    "formatted": false
   },
   "MainForm.BundledXmlAdoption.080093f05b043301": {
     "context": "MainForm.BundledXmlAdoption",
@@ -5417,11 +5227,6 @@
   "MainForm.BundledXmlAdoption.61e44ef7db604f75": {
     "context": "MainForm.BundledXmlAdoption",
     "english": "{0}{1}If any source bundle changes, Script Merger Remastered will automatically show the conflict again.\n\nThe full conflict scan was deferred so you can adopt more existing merges. Press F5 or click Refresh when you are finished.",
-    "formatted": true
-  },
-  "MainForm.BundledXmlAdoption.69a1346e97fed6c4": {
-    "context": "MainForm.BundledXmlAdoption",
-    "english": "{0}\n\nNo bundle was modified. No unverified inventory record was retained.",
     "formatted": true
   },
   "MainForm.BundledXmlAdoption.6fb1774bf573897d": {
@@ -5634,11 +5439,6 @@
     "english": "Drag to resize the Conflicts and Merges panels.",
     "formatted": false
   },
-  "MainForm.a934bc32d65adac5": {
-    "context": "MainForm",
-    "english": "Clear Bundle Index Cache",
-    "formatted": false
-  },
   "MainForm.aa53dac3be0bce75": {
     "context": "MainForm",
     "english": "Clear memory caches",
@@ -5699,11 +5499,6 @@
     "english": "Resize Conflicts and Merges panels",
     "formatted": false
   },
-  "MainForm.bcdaa45d698bf2d8": {
-    "context": "MainForm",
-    "english": "Repacking Bundle",
-    "formatted": false
-  },
   "MainForm.bd124d6d8638cba2": {
     "context": "MainForm",
     "english": "Refreshing...",
@@ -5712,11 +5507,6 @@
   "MainForm.bd9c45a050dafe14": {
     "context": "MainForm",
     "english": "No conflicts found in inspected resources",
-    "formatted": false
-  },
-  "MainForm.bdecd1b55abd21f9": {
-    "context": "MainForm",
-    "english": "Checking for duplicate priorities in Load Order",
     "formatted": false
   },
   "MainForm.c0d27381ee5fc0c4": {
@@ -5759,11 +5549,6 @@
     "english": "Open Merged Mod Directory",
     "formatted": false
   },
-  "MainForm.c793d75782312b2f": {
-    "context": "MainForm",
-    "english": "Clear Bundle Index Cache...",
-    "formatted": false
-  },
   "MainForm.c7a283951d5537ff": {
     "context": "MainForm",
     "english": "Refresh Merges (Keyboard: F6)",
@@ -5782,16 +5567,6 @@
   "MainForm.c997a31c1731aafd": {
     "context": "MainForm",
     "english": "Wait for the current Script Merger Remastered operation to finish before renaming a mod folder.",
-    "formatted": false
-  },
-  "MainForm.ca4c827f8859dc7e": {
-    "context": "MainForm",
-    "english": "Remove from Merges list \u0026 repack merged bundle?",
-    "formatted": false
-  },
-  "MainForm.caf9ef12eec7aba9": {
-    "context": "MainForm",
-    "english": "These keyboard shortcuts are enabled in the main window:\n\nCtrl\u002BF: Search Conflicts by Mod Name\n\nF5: Refresh Conflicts Panel\n\nF6: Refresh Merges Panel\n\nC: Create Selected Merges\n\nA: Create ALL Script (only) Merges\n\nD: Delete Selected Merges\n\nE: Delete ALL Merges\n\nEsc: Clear Search, or Exit Application\n\nIn the conflict list or search results:\nCtrl\u002Bclick: Add or remove a file from the selection\nShift\u002Bclick / Shift\u002Barrow: Select a range of files\nCtrl\u002BA: Select all files in expanded categories\nShift\u002BF10: Open the selected files\u0027 context menu\nRight-click selected files to ignore them until their files change.\nCheckboxes continue to choose merge inputs.",
     "formatted": false
   },
   "MainForm.cccdcd9abd06b343": {
@@ -5884,16 +5659,6 @@
     "english": "Search files (e.g. *.swf)...",
     "formatted": false
   },
-  "MainForm.e58cf27aac75e667": {
-    "context": "MainForm",
-    "english": "Clear all cached bundle resource listings? The next detailed conflict scan will rebuild them.",
-    "formatted": false
-  },
-  "MainForm.e592dd9fc43102f5": {
-    "context": "MainForm",
-    "english": "Merge Deleted",
-    "formatted": false
-  },
   "MainForm.e6c9f6a0621e10f6": {
     "context": "MainForm",
     "english": "Merging complete, auto closing in 2 seconds...",
@@ -5959,16 +5724,6 @@
     "english": "No conflicts found for \u0022{0}\u0022.",
     "formatted": true
   },
-  "MainForm.f0e67fe74ed3b91b": {
-    "context": "MainForm",
-    "english": "Mods with duplicate priorities were found in your mods.settings file. This can cause unexpected behavior and you have no real control over the order those mods are loaded in. Because {0} has no way to determine which of the duplicates should get the highest priority, you should resolve this manually by editing the following file before making any priority changes with {1}:\r\n\r\n{2}\r\n\r\nDo you want to open the mods.settings file now?\r\n\r\n\r\nThe mods with duplicate priorities are:\r\n\r\n{3}\r\n",
-    "formatted": true
-  },
-  "MainForm.f165f1d452f6b317": {
-    "context": "MainForm",
-    "english": "Repack Merged Bundle",
-    "formatted": false
-  },
   "MainForm.f22ec4e369dd0fd2": {
     "context": "MainForm",
     "english": "Ignore selected conflicts until files change",
@@ -5992,16 +5747,6 @@
   "MainForm.fb6ff8647294fc7d": {
     "context": "MainForm",
     "english": "Please locate your \u0027The Witcher 3 Wild Hunt\u0027 game directory.",
-    "formatted": false
-  },
-  "MainForm.fbfd35bda6a1e9ee": {
-    "context": "MainForm",
-    "english": "{0} Keyboard Shortcuts",
-    "formatted": true
-  },
-  "MainForm.fc303285c9ecc1db": {
-    "context": "MainForm",
-    "english": "Bundle Index Cache",
     "formatted": false
   },
   "Merge.dfe65901fb39e647": {
@@ -6274,11 +6019,6 @@
     "english": "These mods provide different versions of the same bundled text file.\nMerge the versions to combine their changes.",
     "formatted": false
   },
-  "ModFile.63951db2e4fd5c96": {
-    "context": "ModFile",
-    "english": "A compiled script (.rsblob) and a loose script (.ws) provide the same definition.\nThe compiled version overrides the loose definition, regardless of priority or loose-script merging.",
-    "formatted": false
-  },
   "ModFile.6c943b1511bcb716": {
     "context": "ModFile",
     "english": "These mods provide different versions of the same script file.\nMerge the versions to combine their changes.",
@@ -6329,11 +6069,6 @@
     "english": "These mods supply the same loose file.\nScript Merger does not support merging this file type.",
     "formatted": false
   },
-  "ModFile.fd52a6fe156e72d1": {
-    "context": "ModFile",
-    "english": "A compiled script (.rsblob) and a loose script (.ws) change the same function.\nThe game uses the compiled version; the loose changes here are ignored, even after merging or changing priority.",
-    "formatted": false
-  },
   "ModFile.ff487039e08bcc0e": {
     "context": "ModFile",
     "english": "Multiple compiled scripts (.rsblob) provide this definition.\nLoad order selects one version. See Diagnostics for guidance.",
@@ -6349,19 +6084,9 @@
     "english": "Reading script and XML definitions",
     "formatted": false
   },
-  "ModFileIndex.5b137ca20ee5ea34": {
-    "context": "ModFileIndex",
-    "english": "Reading loose scripts and vanilla definitions",
-    "formatted": false
-  },
   "ModFileIndex.7a2952e27a1f0c21": {
     "context": "ModFileIndex",
     "english": "There are no conventional or Mod.io mods to scan, nothing to do...",
-    "formatted": false
-  },
-  "ModFileIndex.8be63d95e07aaccb": {
-    "context": "ModFileIndex",
-    "english": "Reading precompiled script symbols",
     "formatted": false
   },
   "ModFileIndex.91ce9b3db643dd1d": {
@@ -6377,16 +6102,6 @@
   "ModFileIndex.ae43c3bdf767e68f": {
     "context": "ModFileIndex",
     "english": "Finding installed files",
-    "formatted": false
-  },
-  "ModFileIndex.b8bad3248c2eb985": {
-    "context": "ModFileIndex",
-    "english": "Reading XML definitions",
-    "formatted": false
-  },
-  "ModFileIndex.ea0aa17b4d0b64e4": {
-    "context": "ModFileIndex",
-    "english": "Reading bundled resource paths",
     "formatted": false
   },
   "ModFileIndex.f211b0aa4e575b9c": {
@@ -6499,11 +6214,6 @@
     "english": "Starting...",
     "formatted": false
   },
-  "OptionsForm.02ebe457c25de8d5": {
-    "context": "OptionsForm",
-    "english": "Check merged mod priority",
-    "formatted": false
-  },
   "OptionsForm.0b7eb636822b9844": {
     "context": "OptionsForm",
     "english": "Create script merges automatically",
@@ -6512,11 +6222,6 @@
   "OptionsForm.12223048306fe9d8": {
     "context": "OptionsForm",
     "english": "Never",
-    "formatted": false
-  },
-  "OptionsForm.15527f01ff6adf79": {
-    "context": "OptionsForm",
-    "english": "Check scripts",
     "formatted": false
   },
   "OptionsForm.189ff0a0b6becba3": {
@@ -6562,11 +6267,6 @@
   "OptionsForm.398e48ca3c41d0a3": {
     "context": "OptionsForm",
     "english": "Follow Windows",
-    "formatted": false
-  },
-  "OptionsForm.3c81893c487ddb0a": {
-    "context": "OptionsForm",
-    "english": "Check for duplicate priorities",
     "formatted": false
   },
   "OptionsForm.3f6a1811e3423dcf": {
@@ -6622,16 +6322,6 @@
   "OptionsForm.5f3c26055b7ceb3d": {
     "context": "OptionsForm",
     "english": "Game settings folder unavailable",
-    "formatted": false
-  },
-  "OptionsForm.66d8d8889e7200c3": {
-    "context": "OptionsForm",
-    "english": "Ask to delete outdated merges",
-    "formatted": false
-  },
-  "OptionsForm.67dd9750ab063039": {
-    "context": "OptionsForm",
-    "english": "When off, ask before deleting outdated merges.",
     "formatted": false
   },
   "OptionsForm.6a3405bc43d475bd": {
@@ -6854,11 +6544,6 @@
     "english": "Review successful merges in KDiff3",
     "formatted": false
   },
-  "OptionsForm.d478f13c568087dd": {
-    "context": "OptionsForm",
-    "english": "Play completion sounds",
-    "formatted": false
-  },
   "OptionsForm.de7489a42bf07898": {
     "context": "OptionsForm",
     "english": "Current custom accent color. Activate to choose another color.",
@@ -7059,19 +6744,9 @@
     "english": "The mod.io implementation from {0} skips these conventional mods\u0027 compiled additions:",
     "formatted": true
   },
-  "PrecompiledConflicts.1bc83a726a2187e6": {
-    "context": "PrecompiledConflicts",
-    "english": "Some additions to this function are skipped.\nSee Diagnostics for the affected mods and priority guidance.",
-    "formatted": false
-  },
   "PrecompiledConflicts.2e23fff8d59beb08": {
     "context": "PrecompiledConflicts",
     "english": "Changing priority cannot restore these loose-script changes.",
-    "formatted": false
-  },
-  "PrecompiledConflicts.3019981599738dfe": {
-    "context": "PrecompiledConflicts",
-    "english": "Changing priority or merging loose scripts alone cannot restore these changes.",
     "formatted": false
   },
   "PrecompiledConflicts.3471d28c6f83c880": {
@@ -7089,30 +6764,15 @@
     "english": "Priority selects one version. Move your preferred mod ahead of the others in the mod.io load order (a smaller priority number). Combining the versions requires a compatibility patch.",
     "formatted": false
   },
-  "PrecompiledConflicts.3ca71ccaaebe0f6b": {
-    "context": "PrecompiledConflicts",
-    "english": "Priority selects one version. Give your preferred mod higher priority: a smaller Priority number, or an earlier alphabetical folder name when neither has an assigned priority. Combining the versions requires a compatibility patch.",
-    "formatted": false
-  },
   "PrecompiledConflicts.4b53e6d387e38564": {
     "context": "PrecompiledConflicts",
     "english": "Use a conventional installation of {0} to put these additions ahead of it.",
     "formatted": true
   },
-  "PrecompiledConflicts.55dd314a194bd905": {
-    "context": "PrecompiledConflicts",
-    "english": "Changing priorities, renaming folders or merging loose scripts cannot restore these changes. Combining them requires a compatible compiled version.",
-    "formatted": false
-  },
   "PrecompiledConflicts.5c539312199491ac": {
     "context": "PrecompiledConflicts",
     "english": "Compiled script (.rsblob): supplies an implementation and wraps this function.",
     "formatted": false
-  },
-  "PrecompiledConflicts.68e43e6e6cad45fe": {
-    "context": "PrecompiledConflicts",
-    "english": "Alternatively, give {0} higher priority than {1}: smaller Priority numbers, or earlier alphabetical folder names when neither has an assigned priority.",
-    "formatted": true
   },
   "PrecompiledConflicts.74616bc93ca54c61": {
     "context": "PrecompiledConflicts",
@@ -7164,11 +6824,6 @@
     "english": "Alternatively, choose one version by giving its mod higher priority: a smaller Priority number, or an earlier alphabetical folder name when neither has an assigned priority.",
     "formatted": false
   },
-  "PrecompiledConflicts.b6d07a013e7e1c8d": {
-    "context": "PrecompiledConflicts",
-    "english": "The compiled implementation from {0} bypasses these loose-script changes:",
-    "formatted": true
-  },
   "PrecompiledConflicts.b710fb8f10ebdde2": {
     "context": "PrecompiledConflicts",
     "english": "Compiled script (.rsblob): replaces and wraps this function.",
@@ -7184,11 +6839,6 @@
     "english": "To include these additions, give the listed mods higher priority than {0}: smaller Priority numbers, or folder names that sort earlier alphabetically when neither has an assigned priority.",
     "formatted": true
   },
-  "PrecompiledConflicts.c0fe98199364607e": {
-    "context": "PrecompiledConflicts",
-    "english": "This does not restore the loose-script changes listed above.",
-    "formatted": false
-  },
   "PrecompiledConflicts.c45ede688462ce41": {
     "context": "PrecompiledConflicts",
     "english": "{0}\nSee Diagnostics for conflicts involving this function.",
@@ -7198,11 +6848,6 @@
     "context": "PrecompiledConflicts",
     "english": "Compiled script (.rsblob): replaces this function.",
     "formatted": false
-  },
-  "PrecompiledConflicts.d1268bc73cb27667": {
-    "context": "PrecompiledConflicts",
-    "english": "Alternatively, restore the compiled additions from {0} by giving those mods higher priority than {1}: smaller Priority numbers, or earlier alphabetical folder names when neither has an assigned priority.",
-    "formatted": true
   },
   "PrecompiledConflicts.dde8138b527600d2": {
     "context": "PrecompiledConflicts",
@@ -7398,41 +7043,6 @@
     "context": "RemasteredBundleFile",
     "english": "Bundle resource \u0027{0}\u0027 exceeds the {1:N0}-byte extraction limit.",
     "formatted": true
-  },
-  "RichTextMessage.5c5534f0dabd3e2f": {
-    "context": "RichTextMessage",
-    "english": "OK",
-    "formatted": false
-  },
-  "RichTextMessage.879d7520d9d52e71": {
-    "context": "RichTextMessage",
-    "english": "Abort",
-    "formatted": false
-  },
-  "RichTextMessage.9b363fed715d56ca": {
-    "context": "RichTextMessage",
-    "english": "No",
-    "formatted": false
-  },
-  "RichTextMessage.b5f1ddfcbf1366e1": {
-    "context": "RichTextMessage",
-    "english": "Retry",
-    "formatted": false
-  },
-  "RichTextMessage.cd3affecfa654894": {
-    "context": "RichTextMessage",
-    "english": "Yes",
-    "formatted": false
-  },
-  "RichTextMessage.cf4ce1047da19487": {
-    "context": "RichTextMessage",
-    "english": "Ignore",
-    "formatted": false
-  },
-  "RichTextMessage.e0cba914427fa446": {
-    "context": "RichTextMessage",
-    "english": "Cancel",
-    "formatted": false
   },
   "RsBlobSymbolReader.266f3ce58685d85d": {
     "context": "RsBlobSymbolReader",
@@ -7774,11 +7384,6 @@
     "english": "Error generating metadata.store for the new merged bundle.\nThe bundle packer\u0027s output is below.",
     "formatted": false
   },
-  "WccLite.1174510b2a6660ee": {
-    "context": "WccLite",
-    "english": "Error packing merged content into a new bundle using wcc_lite.\nIts output is below.",
-    "formatted": false
-  },
   "WccLite.1a844790e453e438": {
     "context": "WccLite",
     "english": "The selected file must be named W3Bundle.exe or wcc_lite.exe.",
@@ -7794,16 +7399,6 @@
     "english": "Missing Directory",
     "formatted": false
   },
-  "WccLite.2b86e9de0325e923": {
-    "context": "WccLite",
-    "english": "The selected file must be named wcc_lite.exe.",
-    "formatted": false
-  },
-  "WccLite.2ffd455c863f8ebb": {
-    "context": "WccLite",
-    "english": "Select a valid wcc_lite.exe from the Remastered REDkit or another compatible ModKit installation.",
-    "formatted": false
-  },
   "WccLite.4e721011f8939050": {
     "context": "WccLite",
     "english": "Can\u0027t find content directory to pack into bundle:\n\n{0}",
@@ -7817,21 +7412,6 @@
   "WccLite.60dcd03d7d565658": {
     "context": "WccLite",
     "english": "{0} exited with code {1}.",
-    "formatted": true
-  },
-  "WccLite.6ab45c93efc04f46": {
-    "context": "WccLite",
-    "english": "wcc_lite exited without creating a non-empty metadata.store.",
-    "formatted": false
-  },
-  "WccLite.6be95a1de0e2f15a": {
-    "context": "WccLite",
-    "english": "wcc_lite exited without creating a non-empty blob0.bundle.",
-    "formatted": false
-  },
-  "WccLite.70e4b2b2ba59bf89": {
-    "context": "WccLite",
-    "english": "wcc_lite exited with code {0}.",
     "formatted": true
   },
   "WccLite.77c9f4f2f4435feb": {
@@ -7858,21 +7438,6 @@
     "context": "WccLite",
     "english": "Configure W3Bundle.exe or wcc_lite.exe in Menu \u003E Dependency Locations, then retry.\n\n{0}",
     "formatted": true
-  },
-  "WccLite.c090f0d6f3c8c0e4": {
-    "context": "WccLite",
-    "english": "WCC Required for Bundled-XML Packing",
-    "formatted": false
-  },
-  "WccLite.c825fba64a206fb3": {
-    "context": "WccLite",
-    "english": "Bundled-XML packing requires the optional Remastered WCC runtime. Configure wcc_lite.exe in Menu \u003E Dependencies, then retry.\n\n{0}",
-    "formatted": true
-  },
-  "WccLite.d0767180b8a3122f": {
-    "context": "WccLite",
-    "english": "Error generating metadata.store for the new merged bundle using wcc_lite.\nIts output is below.",
-    "formatted": false
   },
   "WccTermsConsent.1e4f6d609ec6830b": {
     "context": "WccTermsConsent",
@@ -8119,25 +7684,10 @@
     "english": "The default definitions from {0} are disabled. {1} extends the following items.\nEnable {0} before using the extension.",
     "formatted": true
   },
-  "XmlDefinitionDiagnostics.82fab80cd569d2c6": {
-    "context": "XmlDefinitionDiagnostics",
-    "english": "{0} extends this item before {1} registers its default definition. The item loads with incomplete definition data.",
-    "formatted": true
-  },
-  "XmlDefinitionDiagnostics.c0af4035bb1db964": {
-    "context": "XmlDefinitionDiagnostics",
-    "english": "XML definition order \u2014 item \u0022{0}\u0022 ({1})",
-    "formatted": true
-  },
   "XmlDefinitionDiagnostics.d91d2457ab1ef192": {
     "context": "XmlDefinitionDiagnostics",
     "english": "XML definition order",
     "formatted": false
-  },
-  "XmlDefinitionDiagnostics.dd8ad9c34a044865": {
-    "context": "XmlDefinitionDiagnostics",
-    "english": "The default definition from {0} is disabled. {1} extends this item.\nEnable the default definition before using the extension.",
-    "formatted": true
   },
   "XmlOverrideConflictAnalyzer.65d09883830231b3": {
     "context": "XmlOverrideConflictAnalyzer",
