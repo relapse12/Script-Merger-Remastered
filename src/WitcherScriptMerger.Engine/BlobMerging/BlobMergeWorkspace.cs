@@ -61,6 +61,8 @@ internal static class BlobMergeWorkspace
 		internal readonly List<MergeInputFile> Snapshot;
 		internal readonly IReadOnlyList<SourceFile> Vanilla;
 		internal readonly Dictionary<string, Dictionary<long, string>> VanillaEnums;
+		internal IReadOnlyList<SourceFile> RecoveryDeclarations = Array.Empty<SourceFile>();
+		internal string RecoveryTypesIdentity = "";
 
 		// By blob path.
 		internal readonly Dictionary<string, byte[]> BlobData = new( StringComparer.OrdinalIgnoreCase );
@@ -187,6 +189,15 @@ internal static class BlobMergeWorkspace
 			ReadLooseScripts( source, inventories[source.Name], inputs );
 		}
 
+		looseMod = looseModName ?? MergeBuilder.LooseName;
+		var retainedOriginals = ReadRetainedAdoptions( previous, looseMod, modsDirectory, stateFile );
+		inputs.RecoveryDeclarations = inputs.Vanilla.Concat( inputs.ReferenceFiles.Values )
+			.Concat( inputs.LooseFiles.Values.SelectMany( files => files ) )
+			.Concat( retainedOriginals.Select( retained => retained.OriginalFile ) ).ToArray();
+		// Reuse these reference types when additional blobs are selected for this merge.
+		if ( inputs.BlobData.Count > 0 )
+			inputs.RecoveryTypesIdentity = FingerprintRecoveryTypes( inputs.RecoveryDeclarations );
+
 		recovered = recoveryUnavailable is null ? null : RecoverSelectedBlobs( ordered, selected, inputs );
 
 		for ( int order = 0; order < ordered.Length; order++ )
@@ -221,9 +232,7 @@ internal static class BlobMergeWorkspace
 
 		progress?.Invoke( UiText.T( "BlobMerge", "Checking merge inputs" ), "" );
 		MergeBuilder.VerifyInputs( snapshot );
-		looseMod = looseModName ?? MergeBuilder.LooseName;
-
-		foreach ( RetainedAdoption retained in ReadRetainedAdoptions( previous, looseMod, modsDirectory, stateFile ) )
+		foreach ( RetainedAdoption retained in retainedOriginals )
 		{
 			guards.Add( retained.Guard );
 			AddOriginal( modules, looseMod, retained.OriginalFile );
@@ -260,6 +269,8 @@ internal static class BlobMergeWorkspace
 			ReferenceModules = referenceModules,
 			ExcludedSourceFiles = excludedSourceFiles ?? new HashSet<string>(),
 			EnumReferences = inputs.EnumReferences,
+			RecoveryDeclarations = inputs.RecoveryDeclarations,
+			RecoveryTypesIdentity = inputs.RecoveryTypesIdentity,
 			RetainedAdoptions = retainedAdoptions,
 			RetainedMergeSources = retainedSources
 		};
@@ -528,7 +539,8 @@ internal static class BlobMergeWorkspace
 
 	private static IReadOnlyList<SourceFile> RecoverBlob( BlobMergeSource source, string blob, ModInputs inputs )
 	{
-		return RecoverAndSave( inputs.BlobData[blob], source.Name, blob, inputs.VanillaEnums, inputs.EnumReferences, inputs.Vanilla );
+		return RecoverAndSave( inputs.BlobData[blob], source.Name, blob, inputs.VanillaEnums, inputs.EnumReferences,
+			inputs.Vanilla, inputs.RecoveryDeclarations, inputs.RecoveryTypesIdentity );
 	}
 
 	// Recover blobs in parallel, then consume the results in load order.
@@ -752,20 +764,35 @@ internal static class BlobMergeWorkspace
 		string path,
 		Dictionary<string, Dictionary<long, string>> vanillaEnums,
 		IReadOnlyDictionary<string, Dictionary<string, Dictionary<long, string>>> references,
-		IReadOnlyList<SourceFile> vanilla )
+		IReadOnlyList<SourceFile> vanilla,
+		IReadOnlyList<SourceFile> declarations, string typesIdentity )
 	{
-		var sources = Recover( data, name, path, vanillaEnums, references );
+		var sources = Recover( data, name, path, vanillaEnums, references, declarations, typesIdentity );
 
 		RecoveredScriptStore.Save( name, data, sources, vanilla );
 
 		return sources;
 	}
 
-	// Enum references affect recovered names, so include them in the cache key.
+	private static string FingerprintRecoveryTypes( IReadOnlyList<SourceFile> declarations ) => BlobMergeArtifacts.Identity( new
+	{
+		Types = declarations.SelectMany( file => file.Items ).OfType<ClassItem>().Select( item => new
+		{
+			Key = Symbols.ClassKey( item.Decl ), item.Decl.Parent,
+			Fields = item.Decl.Fields.Select( field => new { field.Names, Type = SourceWriter.Type( field.Type ) } ).ToArray()
+		} ).ToArray(),
+		AddedFields = declarations.SelectMany( file => file.Items ).OfType<FieldItem>().Select( item => new
+		{
+			item.Decl.Annotation, item.Decl.Names, Type = SourceWriter.Type( item.Decl.Type )
+		} ).ToArray()
+	} );
+
+	// Enum values and field types affect recovered source, so include them in the cache key.
 	// Require complete recovery before allowing a blob to be merged.
 	private static IReadOnlyList<SourceFile> Recover( byte[] data, string name, string path,
 		Dictionary<string, Dictionary<long, string>> vanillaEnums,
-		IReadOnlyDictionary<string, Dictionary<string, Dictionary<long, string>>> references )
+		IReadOnlyDictionary<string, Dictionary<string, Dictionary<long, string>>> references,
+		IReadOnlyList<SourceFile> declarations, string typesIdentity )
 	{
 		var context = new Dictionary<string, Dictionary<long, string>>( vanillaEnums, StringComparer.Ordinal );
 
@@ -776,12 +803,13 @@ internal static class BlobMergeWorkspace
 		{
 			name,
 			Blob = MergeBuilder.Hash( data ),
-			Enums = context.OrderBy( pair => pair.Key, StringComparer.Ordinal ).Select( pair => new { pair.Key, Values = pair.Value.OrderBy( value => value.Key ).ToArray() } ).ToArray()
+			Enums = context.OrderBy( pair => pair.Key, StringComparer.Ordinal ).Select( pair => new { pair.Key, Values = pair.Value.OrderBy( value => value.Key ).ToArray() } ).ToArray(),
+			Types = typesIdentity
 		} );
 
 		return BlobMergeArtifacts.Get( "recovered-source", identity, () =>
 		{
-			var result = BlobDecompiler.Recover( data, name, context );
+			var result = BlobDecompiler.Recover( data, name, context, declarations );
 
 			if ( !result.CanMerge )
 				throw new InvalidDataException( UiText.Format( "BlobMerge", "{0} cannot be fully recovered:\n{1}", name,
@@ -827,7 +855,8 @@ internal static class BlobMergeWorkspace
 		return loaded.Modules.Single( module => module.Name.Equals( name, StringComparison.OrdinalIgnoreCase ) )
 			with
 		{
-			Files = RecoverAndSave( data, name, path, vanillaEnums, loaded.EnumReferences, loaded.Vanilla )
+			Files = RecoverAndSave( data, name, path, vanillaEnums, loaded.EnumReferences, loaded.Vanilla,
+				loaded.RecoveryDeclarations, loaded.RecoveryTypesIdentity )
 		};
 	}
 

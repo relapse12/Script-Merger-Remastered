@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using WSCompiler.Core.Scripts;
 using WSCompiler.Core.Scripts.Standalone;
 using WSCompiler.Recovery;
+using WitcherScriptMerger.FileIndex;
 
 
 namespace WitcherScriptMerger.Merging;
@@ -178,7 +180,7 @@ public static class MergePlanner
 		}
 
 		var fragments = Build();
-		// Defaults that loose scripts cannot express, added events and native wrappers must compile.
+		// Keep unrecovered defaults, added events, and native wrappers compiled.
 		var compilation = new HashSet<string>( StringComparer.Ordinal );
 		var edges = new List<MergeEdge>();
 		var definitions = fragments.SelectMany( part => DeclarationCatalog.Defines( part.Item ).Select( symbol => (symbol, part) ) )
@@ -308,9 +310,8 @@ public static class MergePlanner
 
 				if ( loose.Length > 0 )
 				{
-					var items = original.Items.Select( item => loose.FirstOrDefault( value => Key( value.Item ) == Key( item ) )?.Item ?? item )
-						.Concat( loose.Where( value => !original.Items.Any( item => Key( item ) == Key( value.Item ) ) ).Select( value => value.Item ) ).ToArray();
-					output.Add( new( original.Path, items, false, loose.SelectMany( value => value.Owners ).Distinct().ToArray() ) );
+					output.Add( new( original.Path, loose.Select( value => value.Item ).ToArray(), false,
+						loose.SelectMany( value => value.Owners ).Distinct().ToArray() ) );
 				}
 			}
 			else
@@ -450,6 +451,23 @@ public static class MergePlanner
 		var wrappers = fragments.Where( part => part.Item is FunctionItem { Decl.Annotation.Kind: AnnotationKind.WrapMethod } )
 			.Select( part => new MergeWrapper( part.Id, Key( part.Item )[5..], part.Owners.Single() ) ).ToArray();
 
+		// Fill in unchanged vanilla declarations for traditional loose file edits. Keep compiled scopes limited to what mods supply.
+		for ( int index = 0; index < output.Count; index++ )
+		{
+			var file = output[index];
+			if ( file.Compile || fileOverrides?.ContainsKey( file.Path ) == true )
+				continue;
+
+			var original = vanilla.FirstOrDefault( value => value.Path.Equals( file.Path, StringComparison.OrdinalIgnoreCase ) );
+			if ( original is null )
+				continue;
+
+			var items = file.Items.Select( item => item is ClassItem type
+				&& baseline.GetValueOrDefault( Key( item ) )?.Item is ClassItem previous
+				? new ClassItem( CompleteLooseClass( type.Decl, previous.Decl ) ) : item ).ToArray();
+			output[index] = file with { Items = FillMissing( original.Items, items, Key ) };
+		}
+
 		foreach ( string mod in loosePaths.Keys )
 			notices.Add( new( output.Any( file => file.Compile && file.Owners.Contains( mod ) ) ? "CompiledConsumer" : "RelatedLooseFile", mod, [mod] ) );
 
@@ -516,6 +534,9 @@ public static class MergePlanner
 							Item = new ClassItem( Header( baseClass! ) )
 						} );
 					var merged = CopyClass( ( (ClassItem)selectedHeader.Item ).Decl, [], [], [] );
+					var retainedDefaults = entries.Select( entry => ( (ClassItem)entry.Item ).Decl )
+						.SelectMany( declaration => declaration.BinaryDefaults.Where( value => !declaration.Defaults.Any( source => source.Field == value.Property ) ) )
+						.GroupBy( value => value.Property ).ToDictionary( values => values.Key, values => values.First() );
 					merged.Fields = MergeMembers( "field", entries.SelectMany( entry => ( (ClassItem)entry.Item ).Decl.Fields.SelectMany( field => field.Names.Select( name =>
 						entry with
 						{
@@ -530,14 +551,14 @@ public static class MergePlanner
 					merged.Hints = MergeValues( "hint", entries, declaration => declaration.Hints.Select( value => (value.Key, new ClassItem( new ClassDecl { Name = merged.Name, Hints = new() { [value.Key] = value.Value } } ) as Item) ),
 						baseClass ).ToDictionary( origin => ( (ClassItem)origin.Item ).Decl.Hints.Single().Key, origin => ( (ClassItem)origin.Item ).Decl.Hints.Single().Value );
 					merged.BinaryDefaults = entries.SelectMany( entry => ( (ClassItem)entry.Item ).Decl.BinaryDefaults ).GroupBy( value => value.Property ).Select( values =>
-{
-	var distinct = values.DistinctBy( value => JsonSerializer.Serialize( value ) ).ToArray();
+					{
+						var distinct = values.DistinctBy( value => JsonSerializer.Serialize( value ) ).ToArray();
 
-	if ( distinct.Length > 1 )
-		throw new InvalidOperationException( $"These mods give {merged.Name}.{values.Key} different starting values. Use compatible versions of these mods; this merge cannot combine both values." );
+						if ( distinct.Length > 1 )
+							throw DifferentDefaults( merged.Name, values.Key );
 
-	return distinct[0];
-} ).ToList();
+						return distinct[0];
+					} ).ToList();
 					merged.RequiresBinaryDefaults = entries.Any( entry => ( (ClassItem)entry.Item ).Decl.RequiresBinaryDefaults );
 					output.Add( new( group.Key, new ClassItem( merged ), entries.Select( entry => entry.Owner ).Distinct().ToArray(), original?.Path ) );
 
@@ -550,14 +571,8 @@ public static class MergePlanner
 						var originalByName = ( originals ?? [] ).ToDictionary( name, StringComparer.Ordinal );
 						var members = values.GroupBy( value => name( value.Item ) ).ToDictionary( group => group.Key, group => group.ToArray() );
 
-						foreach ( string member in originalByName.Keys.Union( members.Keys ) )
+						foreach ( var (member, options) in members )
 						{
-							if ( !members.TryGetValue( member, out var options ) )
-							{
-								yield return new( "Vanilla", original?.Path ?? "", originalByName[member], 0 );
-								continue;
-							}
-
 							var old = originalByName.TryGetValue( member, out var item ) ? new Origin( "Vanilla", original?.Path ?? "", item, 0 ) : null;
 							yield return Choose( group.Key + "/" + label + ":" + member, options, old );
 						}
@@ -576,11 +591,18 @@ public static class MergePlanner
 						var members = entries.SelectMany( Values ).GroupBy( value => value.Key, StringComparer.Ordinal )
 							.ToDictionary( group => group.Key, group => group.Select( value => value.Origin ).ToArray(), StringComparer.Ordinal );
 
-						foreach ( string key in originals.Keys.Union( members.Keys, StringComparer.Ordinal ) )
+						foreach ( var (key, options) in members )
 						{
-							if ( !members.TryGetValue( key, out var options ) )
+							if ( label == "default" && retainedDefaults.TryGetValue( ( (ClassItem)options[0].Item ).Decl.Defaults.Single().Field, out var retained ) )
 							{
-								yield return originals[key];
+								// Preserve the blob's changed default when the loose file still has the vanilla value.
+								var changed = options.Where( option => originals.GetValueOrDefault( key ) is not { } previous
+									|| Canon( option.Item ) != Canon( previous.Item ) ).ToArray();
+								string? type = baseClass is null ? null : ScopedScriptMember.FromClass( baseClass )
+									.FirstOrDefault( member => !member.IsDefault && member.Name == retained.Property )?.Type;
+								if ( changed.Any( option => !MatchesRetainedDefault( ( (ClassItem)option.Item ).Decl, retained, type ) ) )
+									throw DifferentDefaults( merged.Name, key );
+
 								continue;
 							}
 
@@ -856,11 +878,60 @@ public static class MergePlanner
 
 	private static string Canon( Item item ) => MergeBodyComparison.Identity( item );
 
+	private static InvalidOperationException DifferentDefaults( string owner, string field ) => new(
+		$"These mods give {owner}.{field} different starting values. Use compatible versions of these mods; this merge cannot combine both values." );
+
+	private static bool MatchesRetainedDefault( ClassDecl source, ScriptDefault retained, string? type )
+	{
+		var sourceValues = ScopedScriptMember.FromClass( source ).Where( member => member.IsDefault )
+			.Select( member => member.Fingerprint( type ) );
+		var retainedValues = ScopedScriptMember.DefaultMembers( source.Name, retained.Property, retained.Value, retained.Children )
+			.Select( member => member.Fingerprint( type ) );
+		return sourceValues.SequenceEqual( retainedValues );
+	}
+
 	private static bool NeedsBinaryDefaults( Item item ) => item is ClassItem value && ( value.Decl.RequiresBinaryDefaults || value.Decl.BinaryDefaults.Any( value => value.Children.Count > 0 ) );
 
 	private static bool NeedsCompiledEvent( Item item ) => item is FunctionItem { Decl.Annotation.Kind: AnnotationKind.AddMethod, Decl.Specifiers.IsEvent: true };
 
 	private static ClassDecl Header( ClassDecl value ) => CopyClass( value, [], [], [] );
+
+	private static List<T> FillMissing<T>( IEnumerable<T> original, IEnumerable<T> supplied, Func<T, string> key )
+	{
+		var changes = Number( supplied ).ToDictionary( entry => entry.Key, entry => entry.Value );
+		var result = new List<T>();
+		foreach ( var entry in Number( original ) )
+			result.Add( changes.Remove( entry.Key, out var replacement ) ? replacement : entry.Value );
+
+		result.AddRange( changes.Values );
+		return result;
+
+		// Match repeated default assignments by occurrence to preserve their order.
+		IEnumerable<((string Name, int Occurrence) Key, T Value)> Number( IEnumerable<T> values )
+		{
+			var counts = new Dictionary<string, int>( StringComparer.Ordinal );
+			foreach ( var value in values )
+			{
+				string name = key( value );
+				int occurrence = counts.GetValueOrDefault( name ) + 1;
+				counts[name] = occurrence;
+				yield return ((name, occurrence), value);
+			}
+		}
+	}
+
+	private static ClassDecl CompleteLooseClass( ClassDecl value, ClassDecl original )
+	{
+		var fields = original.Fields.SelectMany( field => field.Names.Select( name => Single( field, name ) ) );
+		var result = CopyClass( value,
+			FillMissing( fields, value.Fields, field => field.Names[0] ),
+			FillMissing( original.Methods, value.Methods, method => method.Name ),
+			FillMissing( original.Defaults, value.Defaults, assignment => assignment.Field ) );
+		result.Hints = FillMissing( original.Hints, value.Hints, hint => hint.Key ).ToDictionary( hint => hint.Key, hint => hint.Value );
+		result.BinaryDefaults = value.BinaryDefaults;
+		result.RequiresBinaryDefaults = value.RequiresBinaryDefaults;
+		return result;
+	}
 
 	private static ClassDecl WithNativeParent(
 		ClassDecl value,

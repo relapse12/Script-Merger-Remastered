@@ -137,6 +137,7 @@ public static class MergeBuilder
 
 		progress?.Invoke( MergeBuildStage.VerifyInputs );
 		VerifyInputs( inputs );
+		MergeDefaultValidation.Verify( plan, destination, looseName, compiledName );
 		var outputs = Directory.EnumerateFiles( destination, "*", SearchOption.AllDirectories )
 			.Where( path => Path.GetRelativePath( destination, path ).StartsWith( "mod", StringComparison.Ordinal ) )
 			.Select( path =>

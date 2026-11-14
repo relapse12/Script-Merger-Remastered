@@ -127,7 +127,11 @@ internal sealed record ScopedScriptMember( string Owner, string Name, string Typ
 				yield return member;
 
 		foreach ( var value in type.Defaults.GroupBy( value => value.Field, StringComparer.Ordinal ).Select( group => group.Last() ) )
-			yield return new( owner, value.Field, "", 0, "", DefaultText( value.Value ), true );
+		{
+			var node = DefaultValues.ToNode( value.Value, expression => "source-expression:" + WSCompiler.Recovery.SourceWriter.Expression( expression ) );
+			foreach ( var member in DefaultMembers( owner, value.Field, node.Value, node.Children ) )
+				yield return member;
+		}
 	}
 
 	internal static IEnumerable<ScopedScriptMember> DefaultMembers(
@@ -147,20 +151,4 @@ internal sealed record ScopedScriptMember( string Owner, string Name, string Typ
 	private static string TypeName( TypeRef type ) => type.Args.Count == 0 ? NormalizeType( type.Name )
 		: type.Name + "<" + string.Join( ",", type.Args.Select( TypeName ) ) + ">";
 
-	private static string DefaultText( Expr expression ) => expression.Kind switch
-	{
-		IntLit value => value.Value.ToString( CultureInfo.InvariantCulture ),
-		FloatLit value => value.Value.ToString( "R", CultureInfo.InvariantCulture ),
-		StrLit value => value.Value,
-		NameLit value => value.Value,
-		BoolLit value => value.Value ? "true" : "false",
-		Ident value => value.Name,
-		NullLit => "NULL",
-		Unary { Op: "-" } value => "-" + DefaultText( value.Operand ),
-		DefaultArray value => JsonSerializer.Serialize( ArrayNodes( value ) ),
-		_ => "source-expression:" + WSCompiler.Recovery.SourceWriter.Expression( expression )
-	};
-
-	private static List<ScriptDefaultNode> ArrayNodes( DefaultArray array ) => array.Values.Select( value => value.Kind is DefaultArray nested
-		? new ScriptDefaultNode( "", "", ArrayNodes( nested ) ) : new ScriptDefaultNode( "", DefaultText( value ), [] ) ).ToList();
 }

@@ -356,6 +356,10 @@ internal sealed class DeclarationCatalog
 					foreach ( var child in value.Values )
 						ReadExpr( child, owner, variables );
 					break;
+				case DefaultStruct value:
+					foreach ( var field in value.Fields )
+						ReadExpr( field.Value, owner, variables );
+					break;
 				case Postfix value:
 					ReadExpr( value.Operand, owner, variables );
 					break;

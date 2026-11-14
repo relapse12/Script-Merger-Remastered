@@ -31,6 +31,8 @@ internal sealed record LoadedBlobMerge( IReadOnlyList<MergeModule> Modules, IRea
 	internal IReadOnlyDictionary<string, string> SourceReads { get; init; } = new Dictionary<string, string>();
 	internal IReadOnlyList<MergeModule> ReferenceModules { get; init; } = Array.Empty<MergeModule>();
 	internal IReadOnlyDictionary<string, Dictionary<string, Dictionary<long, string>>> EnumReferences { get; init; } = new Dictionary<string, Dictionary<string, Dictionary<long, string>>>();
+	internal IReadOnlyList<SourceFile> RecoveryDeclarations { get; init; } = Array.Empty<SourceFile>();
+	internal string RecoveryTypesIdentity { get; init; } = "";
 
 	internal IReadOnlyList<Merge> RetainedAdoptions { get; init; } = Array.Empty<Merge>();
 	internal IReadOnlyDictionary<string, string> RetainedMergeSources { get; init; } = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
