@@ -54,7 +54,7 @@ public static class BlobReferences
     public static SourceFile Read(string path)
         => Read(ScriptBlob.Open(path));
     public static SourceFile Read(byte[] data, string identity) => Read(ScriptBlob.FromBytes(data, identity));
-    private static SourceFile Read(ScriptBlob blob)
+	internal static SourceFile Read( ScriptBlob blob )
     {
         var items = new List<Item>();
         foreach (var e in blob.Enums)

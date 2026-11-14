@@ -5,6 +5,29 @@ namespace WSCompiler.Core.Scripts.Standalone;
 // Check default-value conversions against REDkit behavior, including warnings for malformed Boolean prefixes.
 public static class DefaultValues
 {
+	public static ScriptDefaultNode ToNode( Expr value, Func<Expr, string>? unsupported = null ) => value.Kind switch
+	{
+		DefaultArray array => new( "", "", array.Values.Select( child => ToNode( child, unsupported ) ).ToList() ),
+		DefaultStruct structure => new( "", "", structure.Fields.Select( field =>
+			ToNode( field.Value, unsupported ) with { Key = field.Field } ).ToList() ),
+		_ => new( "", ScalarText( value, unsupported ), [] )
+	};
+
+	private static string ScalarText( Expr expression, Func<Expr, string>? unsupported ) => expression.Kind switch
+	{
+		IntLit value => value.Value.ToString( CultureInfo.InvariantCulture ),
+		FloatLit value => value.Text,
+		StrLit value => value.Value,
+		NameLit value => value.Value,
+		BoolLit value => value.Value ? "true" : "false",
+		Ident value => value.Name,
+		NullLit => "NULL",
+		Unary { Op: "-", Operand.Kind: FloatLit value } => ( -value.Value ).ToString( "R", CultureInfo.InvariantCulture ),
+		Unary { Op: "-" } value => "-" + ScalarText( value.Operand, unsupported ),
+		_ => unsupported is not null ? unsupported( expression )
+			: throw new CompileException( "this default value isn't supported", expression.Line )
+	};
+
     public static (List<CompileProblem> Errors, List<CompileProblem> Warnings) Check(Symbols symbols, IReadOnlyList<SourceFile> files)
     {
         var errors = new List<CompileProblem>();
@@ -20,7 +43,7 @@ public static class DefaultValues
                     if (d.Field == "autoState") continue;
                     int line = Math.Max(d.Value.Line, 1);
                     // loc-ignore-start: wcc_lite's own words, as its compile messages are
-                    if (FindField(symbols, cls, d.Field) is not { } field)
+                    if (symbols.FindField(cls, d.Field) is not { } field)
                     {
                         // RTTI can omit native field declarations.
                         if (symbols.Classes.ContainsKey(cls)) errors.Add(new(file.Path, line, $"Property '{d.Field}' does not exist in '{decl.Name}'"));
@@ -29,6 +52,23 @@ public static class DefaultValues
                     CheckValue(field.Type, d.Value);
                     void CheckValue(Ty type, Expr value)
                     {
+						if ( value.Kind is DefaultStruct structure )
+						{
+							if ( type.Kind != TyKind.Struct )
+							{
+								errors.Add( new( file.Path, value.Line, $"'{type}' is not a struct." ) );
+								return;
+							}
+
+							foreach ( var member in structure.Fields )
+							{
+								if ( symbols.FindField( type.Name, member.Field ) is { } child )
+									CheckValue( child.Type, member.Value );
+								else
+									errors.Add( new( file.Path, member.Value.Line, $"Property '{member.Field}' does not exist in '{type.Name}'" ) );
+							}
+							return;
+						}
                         if (value.Kind is DefaultArray array)
                         {
                             if (type.Kind != TyKind.Array) errors.Add(new(file.Path, line, "Unable to parse value"));
@@ -72,18 +112,6 @@ public static class DefaultValues
                 if (item is ClassItem { Decl: { IsStateMachine: true } decl } && !HasAutoState(Symbols.ClassKey(decl)))
                     warnings.Add(new(file.Path, Math.Max(decl.Line, 1), $"State machine '{decl.Name}' has no autostate.")); // loc-ignore: wcc_lite's words
         return warnings;
-    }
-
-    private static FieldInfo? FindField(Symbols symbols, string owner, string path)
-    {
-        FieldInfo? field = null;
-        foreach (string name in path.Split('.'))
-        {
-            field = symbols.FindField(owner, name);
-            if (field is null) return null;
-            owner = field.Type.Name;
-        }
-        return field;
     }
 
     private static string? Text(ExprKind value) => value switch

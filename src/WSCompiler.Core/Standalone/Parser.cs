@@ -216,14 +216,12 @@ public sealed class Parser
                     Advance();
                     string name = Identifier();
                     if (name == "autoState") cls.HasAutoStateDefault = true;
-                    while (EatPunct(".")) name += "." + Identifier();
                     ExpectPunct("=");
                     if (_skipBodies)
                         SkipUntil(";");
                     else
                     {
                         var value = ParseDefaultValue();
-                        if (name.Contains('.') && value.Kind is DefaultArray) throw Error("array defaults require a direct field");
                         ExpectPunct(";");
                         cls.Defaults.Add(new DefaultAssignment(name, value));
                     }
@@ -248,10 +246,8 @@ public sealed class Parser
                     while (!EatPunct("}"))
                     {
                         string name = Identifier();
-                        while (EatPunct(".")) name += "." + Identifier();
                         ExpectPunct("=");
                         var value = ParseDefaultValue();
-                        if (name.Contains('.') && value.Kind is DefaultArray) throw Error("array defaults require a direct field");
                         ExpectPunct(";");
                         cls.Defaults.Add(new DefaultAssignment(name, value));
                     }
@@ -270,38 +266,58 @@ public sealed class Parser
         }
     }
 
-    // Array defaults accept literals, identifiers and nested arrays.
-    private Expr ParseDefaultValue(bool arrayElement = false)
-    {
-        if (!arrayElement && EatPunct("-"))
-        {
-            int line = PrevLine;
-            if (Cur.Kind is not (TokKind.Int or TokKind.Float)) throw Error("expected a numeric literal after '-' in a default");
-            return new Expr(new Unary("-", Primary()), line);
-        }
-        // In defaults, parentheses introduce struct field assignments; scalar grouping is invalid.
-        if (IsPunct("(") && !(PeekAt(1).Kind == TokKind.Ident && PeekAt(2) is { Kind: TokKind.Punct, Text: "=" }))
-            throw Error("expected a default value without expression parentheses");
-        if (EatPunct("{"))
-        {
-            int line = PrevLine;
-            var values = new List<Expr>();
-            if (!EatPunct("}"))
-                while (true)
-                {
-                    values.Add(ParseDefaultValue(arrayElement: true));
-                    if (EatPunct("}")) break;
-                    ExpectPunct(",");
-                }
-            return new Expr(new DefaultArray(values), line);
-        }
-        if (arrayElement && Cur.Kind is not (TokKind.Int or TokKind.Float or TokKind.Str or TokKind.Name or TokKind.Ident))
-            throw Error("expected a default array value");
-        var value = arrayElement ? Primary() : ParseExpr();
-        if (arrayElement && value.Kind is not (IntLit or FloatLit or StrLit or NameLit or BoolLit or NullLit or Ident))
-            throw Error("expected a default array value");
-        return value;
-    }
+	// Defaults accept scalar literals, arrays, and named struct fields.
+	private Expr ParseDefaultValue( bool compoundElement = false )
+	{
+		if ( !compoundElement && EatPunct( "-" ) )
+		{
+			int line = PrevLine;
+			if ( Cur.Kind is not (TokKind.Int or TokKind.Float) )
+				throw Error( "expected a numeric literal after '-' in a default" );
+			return new Expr( new Unary( "-", Primary() ), line );
+		}
+
+		// In defaults, parentheses introduce struct field assignments; scalar grouping is invalid.
+		if ( IsPunct( "(" ) && !(PeekAt( 1 ).Kind == TokKind.Ident && PeekAt( 2 ) is { Kind: TokKind.Punct, Text: "=" }) )
+			throw Error( "expected a default value without expression parentheses" );
+		if ( EatPunct( "(" ) )
+		{
+			int line = PrevLine;
+			var fields = new List<DefaultAssignment>();
+			do
+			{
+				string name = Identifier();
+				ExpectPunct( "=" );
+				fields.Add( new( name, ParseDefaultValue( compoundElement: true ) ) );
+			}
+			while ( EatPunct( "," ) );
+
+			ExpectPunct( ")" );
+			return new( new DefaultStruct( fields ), line );
+		}
+
+		if ( EatPunct( "{" ) )
+		{
+			int line = PrevLine;
+			var values = new List<Expr>();
+			if ( !EatPunct( "}" ) )
+				while ( true )
+				{
+					values.Add( ParseDefaultValue( compoundElement: true ) );
+					if ( EatPunct( "}" ) )
+						break;
+					ExpectPunct( "," );
+				}
+			return new Expr( new DefaultArray( values ), line );
+		}
+
+		if ( compoundElement && Cur.Kind is not (TokKind.Int or TokKind.Float or TokKind.Str or TokKind.Name or TokKind.Ident) )
+			throw Error( "expected a literal or compound default value" );
+		var value = compoundElement ? Primary() : ParseExpr();
+		if ( compoundElement && value.Kind is not (IntLit or FloatLit or StrLit or NameLit or BoolLit or NullLit or Ident) )
+			throw Error( "expected a literal or compound default value" );
+		return value;
+	}
 
     private void SkipUntil(string punct)
     {

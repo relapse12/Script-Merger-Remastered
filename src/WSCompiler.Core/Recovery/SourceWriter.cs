@@ -30,6 +30,7 @@ public static class SourceWriter
         BoolLit value => value.Value ? "true" : "false",
         NullLit => "NULL",
         DefaultArray value => "{ " + string.Join(", ", value.Values.Select(Expression)) + " }",
+		DefaultStruct value => "(" + string.Join( ", ", value.Fields.Select( field => field.Field + " = " + DefaultValue( field.Value ) ) ) + ")",
         Ident value => value.Name,
         ThisExpr => "this",
         SuperExpr => "super",

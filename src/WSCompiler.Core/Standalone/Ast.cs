@@ -125,6 +125,7 @@ public sealed record NameLit(string Value) : ExprKind;
 public sealed record BoolLit(bool Value) : ExprKind;
 public sealed record NullLit : ExprKind;
 public sealed record DefaultArray(List<Expr> Values) : ExprKind;
+public sealed record DefaultStruct(List<DefaultAssignment> Fields) : ExprKind;
 public sealed record Ident(string Name) : ExprKind;
 public sealed record ThisExpr : ExprKind;
 public sealed record SuperExpr : ExprKind;

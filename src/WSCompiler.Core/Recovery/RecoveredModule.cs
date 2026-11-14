@@ -26,10 +26,15 @@ public sealed record RecoveredModule(
 // BlobComparison and ControlFlowComparison separately check recompiled output.
 public static class BlobDecompiler
 {
-    public static RecoveredModule Recover(byte[] data, string identity, IEnumerable<string> referenceScripts)
-        => Recover(data, identity, EnumResolver.ReadEnums(referenceScripts));
+	public static RecoveredModule Recover( byte[] data, string identity, IEnumerable<string> referenceScripts )
+	{
+		var declarations = referenceScripts.Select( text => new SourceFile( "reference", Parser.ParseSource( text, true ) ) ).ToArray();
+		var enums = EnumResolver.ReadEnums( declarations.SelectMany( file => file.Items ).OfType<EnumItem>().Select( item => item.Decl ) );
+		return Recover( data, identity, enums, declarations );
+	}
 
-    public static RecoveredModule Recover(byte[] data, string identity, Dictionary<string, Dictionary<long, string>> referenceEnums)
+	public static RecoveredModule Recover( byte[] data, string identity, Dictionary<string, Dictionary<long, string>> referenceEnums,
+		IReadOnlyList<SourceFile>? referenceDeclarations = null )
     {
         var blob = ScriptBlob.FromBytes(data, identity);
         var resolver = new EnumResolver(blob, referenceEnums) { RequireAutomaticBindings = true };
@@ -60,12 +65,10 @@ public static class BlobDecompiler
         {
             if ((declaration.Flags & ~(1 | 2 | 0x400)) != 0)
                 issues.Add(new(declaration.Name, RecoveryRequirement.Unsupported, "The class contains unsupported declaration flags."));
-            CheckDefaults(declaration.Name, declaration.Defaults, declaration.Properties);
         }
         foreach (var declaration in blob.Structs)
         {
             if ((declaration.Flags & ~2) != 0) issues.Add(new(declaration.Name, RecoveryRequirement.Unsupported, "The struct contains unsupported declaration flags."));
-            CheckDefaults(declaration.Name, declaration.Defaults, declaration.Properties);
         }
         foreach (var property in blob.Classes.SelectMany(value => value.Properties).Concat(blob.Structs.SelectMany(value => value.Properties)).Concat(blob.AddedFields))
             if ((property.Flags & ~0x1fc02f) != 0 || blob.AddedFields.Contains(property) && ((property.Flags & 0x80000) != 0 || property.Hint.Length > 0))
@@ -77,7 +80,7 @@ public static class BlobDecompiler
         var files = new List<RecoveredFile>();
         if (issues.Any(issue => issue.Requirement == RecoveryRequirement.Unsupported)) return new(identity, blob, files, issues);
         // all.ws repeats the individual documents, so skip it here.
-        foreach (var document in ScriptWriter.Write(blob, identity, resolver, executableDefaults: true).Skip(1))
+		foreach ( var document in ScriptWriter.Write( blob, identity, resolver, executableDefaults: true, referenceDeclarations: referenceDeclarations ).Skip( 1 ) )
         {
             try
             {
@@ -87,8 +90,12 @@ public static class BlobDecompiler
                     IReadOnlyList<ScriptDefault> defaults = declaration.IsStruct
                         ? blob.Structs.First(value => value.Name == declaration.Name).Defaults
                         : blob.Classes.First(value => value.Name == declaration.Name && value.StateOf == (declaration.StateMachineOf ?? "")).Defaults;
-                    declaration.BinaryDefaults = defaults.ToList();
-                    declaration.RequiresBinaryDefaults = issues.Any(issue => issue.Symbol == declaration.Name && issue.Requirement == RecoveryRequirement.CompiledOutput);
+					declaration.BinaryDefaults = defaults.Where( value => !declaration.Defaults.Any( source => source.Field == value.Property ) ).ToList();
+					declaration.RequiresBinaryDefaults = declaration.BinaryDefaults.Count > 0;
+					// The writer has already checked which defaults can be represented in source.
+					if ( declaration.RequiresBinaryDefaults )
+						issues.Add( new( Symbols.ClassKey( declaration ), RecoveryRequirement.CompiledOutput,
+							"These defaults require preserved compiled metadata." ) );
                 }
                 files.Add(new(document.Path, document.Text, declarations));
             }
@@ -141,21 +148,5 @@ public static class BlobDecompiler
             }
             catch (ScriptSyntaxException error) { throw new InvalidDataException("A compiled literal cannot be preserved in source.", error); }
         }
-
-        // Keep defaults with no source syntax as metadata and require compiled output.
-        void CheckDefaults(string owner, IReadOnlyList<ScriptDefault> defaults, IReadOnlyList<ScriptProperty> properties)
-        {
-            if (defaults.Any(value => ContainsArray(value.Children)))
-                issues.Add(new(owner, RecoveryRequirement.CompiledOutput,
-                    "Array defaults require preserved compiled metadata."));
-            else if (defaults.Any(value => !ScriptWriter.CanWriteDefault(value, properties)))
-                issues.Add(new(owner, RecoveryRequirement.CompiledOutput,
-                    "These defaults require preserved compiled metadata."));
-        }
     }
-
-    // Array elements are the nodes with empty keys.
-    private static bool ContainsArray(IReadOnlyList<ScriptDefaultNode> values) =>
-        values.Count > 0 && values.All(value => value.Key.Length == 0)
-        || values.Any(value => ContainsArray(value.Children));
 }

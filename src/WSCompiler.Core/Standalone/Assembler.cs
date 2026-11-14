@@ -1,8 +1,6 @@
 
 namespace WSCompiler.Core.Scripts.Standalone;
 
-public sealed record CompileProblem(string? File, int Line, string Text);
-
 public sealed class CompileFailedException(List<CompileProblem> problems)
     : Exception(problems.Count == 1 ? problems[0].Text : $"{problems.Count} problems")
 {
@@ -367,48 +365,12 @@ public sealed class Assembler
         var values = decl.BinaryDefaults.ToDictionary(value => value.Property, StringComparer.Ordinal);
         foreach (var assignment in decl.Defaults)
         {
-            string[] path = assignment.Field.Split('.');
-            if (path.Length == 1)
-            {
-                var value = DefaultNode(assignment.Value);
-                values[path[0]] = new(path[0], value.Value, value.Children);
-                continue;
-            }
-            var current = values.GetValueOrDefault(path[0]) ?? new ScriptDefault(path[0], "", []);
-            values[path[0]] = current with { Children = SetDefault(current.Children, path, 1, DefaultText(assignment.Value)) };
+			var value = Standalone.DefaultValues.ToNode( assignment.Value );
+			values[assignment.Field] = new( assignment.Field, value.Value, value.Children );
         }
         return values.Values.Select(value => new DefaultDef(_tables.Name(value.Property),
             _tables.Name(""), value.Value, value.Children)).ToList();
     }
-
-    private static ScriptDefaultNode DefaultNode(Expr value) => value.Kind is DefaultArray array
-        ? new("", "", array.Values.Select(DefaultNode).ToList()) : new("", DefaultText(value), []);
-
-    private static List<ScriptDefaultNode> SetDefault(List<ScriptDefaultNode> nodes, string[] path, int index, string value)
-    {
-        var result = nodes.ToList();
-        int position = result.FindIndex(node => node.Key == path[index]);
-        var node = position < 0 ? new ScriptDefaultNode(path[index], "", []) : result[position];
-        node = index == path.Length - 1 ? node with { Value = value }
-            : node with { Children = SetDefault(node.Children, path, index + 1, value) };
-        if (position < 0) result.Add(node);
-        else result[position] = node;
-        return result;
-    }
-
-    private static string DefaultText(Expr expr) => expr.Kind switch
-    {
-        IntLit i => i.Value.ToString(),
-        FloatLit f => f.Text,
-        StrLit s => s.Value,
-        NameLit n => n.Value,
-        BoolLit b => b.Value ? "true" : "false",
-        Ident id => id.Name,
-        Unary { Op: "-", Operand.Kind: FloatLit f } => (-f.Value).ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-        Unary { Op: "-" } u => "-" + DefaultText(u.Operand),
-        NullLit => "NULL",
-        _ => throw new CompileException("this default value isn't supported", expr.Line),
-    };
 
     private (int, int, List<PropDef>, List<DefaultDef>) StructDefinition(ClassDecl decl)
     {

@@ -24,10 +24,12 @@ public static class ScriptWriter
     private const int ClassAbstract = 0x1, ClassImport = 0x2, ClassStatemachine = 0x400;
 
     // For executable source, omit defaults with no valid source form; BlobDecompiler retains their compiled metadata.
-    public static List<ScriptDocument> Write(ScriptBlob blob, string sourceLabel, EnumResolver? enumResolver = null, bool executableDefaults = false)
+	public static List<ScriptDocument> Write( ScriptBlob blob, string sourceLabel, EnumResolver? enumResolver = null,
+		bool executableDefaults = false, IReadOnlyList<Standalone.SourceFile>? referenceDeclarations = null )
     {
         var enums = enumResolver ?? new EnumResolver(blob);
         var decompiler = new Decompiler(blob, enums);
+		var defaults = new DefaultSource( blob, referenceDeclarations ?? [] );
         string header = Header(blob, sourceLabel, enums);
         var docs = new List<ScriptDocument>();
         var all = new StringBuilder(header);
@@ -43,7 +45,8 @@ public static class ScriptWriter
         {
             var sb = new StringBuilder();
             foreach (var e in blob.Enums) WriteEnum(sb, e, enums.IsExtension(e));
-            foreach (var s in blob.Structs) WriteStruct(sb, s, executableDefaults);
+			foreach ( var s in blob.Structs )
+				WriteStruct( sb, s, executableDefaults, defaults );
             Add("scripts\\types.ws", sb.ToString(), 0);
         }
 
@@ -51,15 +54,15 @@ public static class ScriptWriter
         foreach (var c in blob.Classes.Where(c => !c.IsState))
         {
             var sb = new StringBuilder();
-            WriteClass(sb, c, decompiler, executableDefaults);
+			WriteClass( sb, c, decompiler, executableDefaults, defaults );
             foreach (var state in blob.Classes.Where(s => s.IsState && s.StateOf == c.Name))
-                WriteClass(sb, state, decompiler, executableDefaults);
+				WriteClass( sb, state, decompiler, executableDefaults, defaults );
             Add($"scripts\\classes\\{c.Name}.ws", sb.ToString(), CodeSize(blob.Classes.Where(x => x == c || x.StateOf == c.Name)));
         }
         foreach (var state in blob.Classes.Where(s => s.IsState && !defined.Contains(s.StateOf)))
         {
             var sb = new StringBuilder();
-            WriteClass(sb, state, decompiler, executableDefaults);
+			WriteClass( sb, state, decompiler, executableDefaults, defaults );
             Add($"scripts\\classes\\{state.StateOf}.{state.Name}.ws", sb.ToString(), CodeSize([state]));
         }
 
@@ -117,16 +120,16 @@ public static class ScriptWriter
         sb.Append("}\n\n");
     }
 
-    private static void WriteStruct(StringBuilder sb, ScriptStruct s, bool executableDefaults)
+	private static void WriteStruct( StringBuilder sb, ScriptStruct s, bool executableDefaults, DefaultSource defaults )
     {
         sb.Append($"{((s.Flags & 2) != 0 ? "import " : "")}struct {s.Name}\n{{\n");
         foreach (var p in s.Properties)
             WriteProperty(sb, p);
-        WriteDefaults(sb, s.Defaults, s.Properties, executableDefaults);
+		WriteDefaults( sb, s.Defaults, s.Properties, executableDefaults, defaults, s.Name );
         sb.Append("}\n\n");
     }
 
-    private static void WriteClass(StringBuilder sb, ScriptClass c, Decompiler decompiler, bool executableDefaults)
+	private static void WriteClass( StringBuilder sb, ScriptClass c, Decompiler decompiler, bool executableDefaults, DefaultSource defaults )
     {
         string mods = ((c.Flags & ClassImport) != 0 ? "import " : "")
             + ((c.Flags & ClassAbstract) != 0 ? "abstract " : "");
@@ -140,7 +143,8 @@ public static class ScriptWriter
 
         foreach (var p in c.Properties)
             WriteProperty(sb, p);
-        WriteDefaults(sb, c.Defaults, c.Properties, executableDefaults);
+		WriteDefaults( sb, c.Defaults, c.Properties, executableDefaults, defaults,
+			c.IsState ? Standalone.Symbols.StateClassKey( c.StateOf, c.Name ) : c.Name );
         if (c.Properties.Count > 0 || c.Defaults.Count > 0)
             sb.Append('\n');
 
@@ -150,35 +154,30 @@ public static class ScriptWriter
         sb.Append("}\n\n");
     }
 
-    private static void WriteDefaults(StringBuilder sb, List<ScriptDefault> defaults, List<ScriptProperty> props, bool executableDefaults)
-    {
-        foreach (var d in defaults)
-        {
-            if (executableDefaults && !CanWriteDefault(d, props)) continue;
-            string type = props.FirstOrDefault(p => p.Name == d.Property)?.Type ?? "";
-            if (d.Children.Count == 0)
-                sb.Append($"\tdefault {d.Property} = {DefaultValue(type, d.Value)};\n");
-            else
-                WriteDefaultChildren(sb, d.Property, type, d.Children);
-        }
-        foreach (var p in props.Where(p => p.Hint.Length > 0))
-            sb.Append($"\thint {p.Name} = {Decompiler.Quote(p.Hint)};\n");
-    }
+	private static void WriteDefaults( StringBuilder sb, List<ScriptDefault> defaults, List<ScriptProperty> props,
+		bool executableDefaults, DefaultSource source, string owner )
+	{
+		foreach ( var d in defaults )
+		{
+			if ( source.TryWrite( owner, d, out string expression ) )
+			{
+				sb.Append( $"\tdefault {d.Property} = {expression};\n" );
+				continue;
+			}
 
-    // Compound defaults remain compiled metadata during recovery.
-    public static bool CanWriteDefault(ScriptDefault value, IReadOnlyList<ScriptProperty> properties)
-    {
-        if (value.Children.Count > 0) return false;
-        string type = properties.FirstOrDefault(property => property.Name == value.Property)?.Type ?? "";
-        if (type.Length == 0 && value.Value is not ("true" or "false" or "NULL")
-            && !double.TryParse(value.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)) return false;
-        try
-        {
-            Standalone.Parser.ParseSource($"class SMR_Default {{ default {value.Property} = {DefaultValue(type, value.Value)}; }}", false);
-            return true;
-        }
-        catch (Standalone.ScriptSyntaxException) { return false; }
-    }
+			if ( executableDefaults )
+				continue;
+
+			string type = props.FirstOrDefault( p => p.Name == d.Property )?.Type ?? "";
+			if ( d.Children.Count == 0 )
+				sb.Append( $"\tdefault {d.Property} = {DefaultValue( type, d.Value )};\n" );
+			else
+				WriteDefaultChildren( sb, d.Property, type, d.Children );
+		}
+
+		foreach ( var p in props.Where( p => p.Hint.Length > 0 ) )
+			sb.Append( $"\thint {p.Name} = {Decompiler.Quote( p.Hint )};\n" );
+	}
 
     private static string DefaultValue(string type, string value)
     {
@@ -191,7 +190,7 @@ public static class ScriptWriter
         };
     }
 
-    // Struct fields can be written as dotted assignments. Array defaults remain compiled metadata.
+    // Show unrecovered array defaults as comments for inspection. Merge recovery preserves these values in compiled metadata.
     private static void WriteDefaultChildren(StringBuilder sb, string path, string type, List<ScriptDefaultNode> children)
     {
         if (children.All(c => c.Key.Length == 0))
@@ -201,14 +200,16 @@ public static class ScriptWriter
                 sb.Append($"\t//     {(c.Children.Count == 0 ? DefaultValue(type, c.Value) : "{ ... }")}\n");
             return;
         }
-        foreach (var c in children)
-        {
-            if (c.Children.Count == 0)
-                sb.Append($"\tdefault {path}.{c.Key} = {c.Value};\n");
-            else
-                WriteDefaultChildren(sb, $"{path}.{c.Key}", "", c.Children);
-        }
+		sb.Append( $"\tdefault {path} = {CompoundValue( children )};\n" );
     }
+
+	private static string CompoundValue( IReadOnlyList<ScriptDefaultNode> children )
+	{
+		bool structure = children.All( child => child.Key.Length > 0 );
+		var values = children.Select( child => ( structure ? child.Key + " = " : "" )
+			+ ( child.Children.Count > 0 ? CompoundValue( child.Children ) : Decompiler.Quote( child.Value ) ) );
+		return ( structure ? "(" : "{ " ) + string.Join( ", ", values ) + ( structure ? ")" : " }" );
+	}
 
     private static string VarModifiers(int flags)
     {
