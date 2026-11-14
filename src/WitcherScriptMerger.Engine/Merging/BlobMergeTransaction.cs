@@ -447,26 +447,10 @@ public static partial class BlobMergeTransaction
 				throw new IOException( "Source backup changed; automatic restore is unsafe: " + suppressed );
 		}
 
-		var editedOutputs = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
-
-		foreach ( var output in manifest.Outputs )
-		{
-			string path = MergeBuilder.SafePath( manifest.ModsRoot, output.Path );
-
-			if ( !File.Exists( path ) )
-				continue;
-
-			string hash = MergeBuilder.Hash( path );
-
-			if ( hash == output.Sha256 )
-				continue;
-
-			if ( approvedEditedOutputs is not null
-				&& approvedEditedOutputs.TryGetValue( path, out var approvedHash ) && hash == approvedHash )
-				continue;
-
-			editedOutputs.Add( path, hash );
-		}
+		var editedOutputs = FindEditedOutputs( manifest )
+			.Where( output => approvedEditedOutputs is null
+				|| !approvedEditedOutputs.TryGetValue( output.Key, out var approvedHash ) || output.Value != approvedHash )
+			.ToDictionary( output => output.Key, output => output.Value, StringComparer.OrdinalIgnoreCase );
 
 		if ( editedOutputs.Count > 0 )
 			throw new EditedMergeOutputsException( editedOutputs );
@@ -531,6 +515,27 @@ public static partial class BlobMergeTransaction
 
 		CleanupWorkspace( applied, stateFile );
 		CleanupAdoptedOutputs( applied, stateFile, [] );
+	}
+
+	// Use the same edit check for confirmation and restoration
+	internal static IReadOnlyDictionary<string, string> FindEditedOutputs( BlobMergeManifest manifest )
+	{
+		var edited = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
+
+		foreach ( var output in manifest.Outputs )
+		{
+			string path = MergeBuilder.SafePath( manifest.ModsRoot, output.Path );
+
+			if ( !File.Exists( path ) )
+				continue;
+
+			string hash = MergeBuilder.Hash( path );
+
+			if ( hash != output.Sha256 )
+				edited.Add( path, hash );
+		}
+
+		return edited;
 	}
 
 	// If the user has since edited mods.settings, remove only this merge's sections and preserve their other changes.

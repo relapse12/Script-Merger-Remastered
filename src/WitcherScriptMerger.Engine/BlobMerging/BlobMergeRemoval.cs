@@ -146,13 +146,17 @@ internal static class BlobMergeRemoval
 
 	// If nothing remains to build, restore the original files. Otherwise rebuild the remaining sources.
 	// Skip backups belonging to removed mods, and check that the game is closed before changing files.
+	// confirmRemoval receives edited files and their hashes, or an empty dictionary for ordinary confirmation.
+	// It can back up files and throw to cancel removal.
 	internal static void Run( string mods, string vanilla, string settingsPath, IReadOnlyList<ModLoadSetting> settings,
 		IReadOnlyList<BlobMergeSource> sources, string inventory, string looseName, string state,
 		IEnumerable<string> affectedMods, IEnumerable<string> affectedOutputs, IReadOnlySet<string>? removedMods = null, Func<bool>? gameRunning = null,
 		Func<IReadOnlyList<BlobMergeSource>>? discoverSources = null, Action<string, string>? progress = null,
-		IReadOnlyDictionary<string, string>? approvedEditedOutputs = null )
+		IReadOnlyDictionary<string, string>? approvedEditedOutputs = null,
+		Action<IReadOnlyDictionary<string, string>>? confirmRemoval = null )
 	{
 		gameRunning ??= () => System.Diagnostics.Process.GetProcessesByName( "witcher3" ).Length > 0;
+		bool confirmed = false;
 
 		if ( gameRunning() )
 			throw new IOException( UiText.T( "BlobMerge", "Close The Witcher 3 before applying or restoring a merge." ) );
@@ -182,6 +186,10 @@ internal static class BlobMergeRemoval
 
 			return;
 		}
+
+		// Ask before loading and recovering the remaining sources, so canceling skips that work.
+		confirmRemoval?.Invoke( new Dictionary<string, string>() );
+		confirmed = confirmRemoval is not null;
 
 		var inputs = allInputs.Where( input => selected.Contains( Key( input ) ) ).ToArray();
 		var excludedMods = inputs.Where( input => input.Path.Length == 0 ).Select( input => input.Mod ).ToHashSet( StringComparer.OrdinalIgnoreCase );
@@ -220,6 +228,18 @@ internal static class BlobMergeRemoval
 
 		void Restore()
 		{
+			if ( confirmRemoval is not null )
+			{
+				progress?.Invoke( UiText.T( "BlobMerge", "Checking merged files for edits" ), "" );
+				var edited = BlobMergeTransaction.FindEditedOutputs( applied.Manifest );
+
+				// If the question was already asked before loading, ask again only for the backup choice.
+				if ( edited.Count > 0 || !confirmed )
+					confirmRemoval( edited );
+
+				approvedEditedOutputs = edited;
+			}
+
 			if ( gameRunning() )
 				throw new IOException( UiText.T( "BlobMerge", "Close The Witcher 3 before applying or restoring a merge." ) );
 

@@ -76,9 +76,6 @@ internal sealed class MergeDeletionService
 			return null;
 		}
 
-		if ( confirm && !host.ConfirmRemoveSelectedMerges() )
-			return null;
-
 		configured = host.Settings.Get( "ModIoDirectory" );
 		settings = session.LoadOrder!.Mods.ToArray();
 		mergedName = host.RetrieveMergedModName();
@@ -97,20 +94,7 @@ internal sealed class MergeDeletionService
 		Action<string, string> report = host.CreateProgressReporter();
 
 		// Capture these values before dispatching work so the worker does not read UI controls or mutable session state.
-		return () =>
-		{
-			try
-			{
-				Remove( null );
-			}
-			catch ( EditedMergeOutputsException error )
-			{
-				ApproveEditedOutputs( error.Outputs, mods, inventory );
-				Remove( error.Outputs );
-			}
-		};
-
-		void Remove( IReadOnlyDictionary<string, string>? approvedEditedOutputs ) => BlobMergeRemoval.Run(
+		return () => BlobMergeRemoval.Run(
 			mods,
 			vanilla,
 			order,
@@ -129,7 +113,14 @@ internal sealed class MergeDeletionService
 				new ModIoDiscovery( modIoDirectory, ModIoDiscovery.ConfigPath( host.Settings ) ).Discover(),
 				mergedName ),
 			progress: report,
-			approvedEditedOutputs: approvedEditedOutputs );
+			// Offer to back up edited files. Otherwise, show the standard deletion prompt.
+			confirmRemoval: outputs =>
+			{
+				if ( outputs.Count > 0 )
+					ApproveEditedOutputs( outputs, mods, inventory );
+				else if ( confirm && !host.ConfirmRemoveSelectedMerges() )
+					throw new OperationCanceledException( UiText.T( "BlobMerge", "Merge removal was canceled." ) );
+			} );
 	}
 
 	// Approval applies only to the file contents shown to the user. The transaction checks them again before restoring.

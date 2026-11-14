@@ -40,7 +40,7 @@ internal sealed class EditedMergeOutputsForm : BaseForm
 			Dock = DockStyle.Fill,
 			MaximumSize = new Size( 720, 0 ),
 			Margin = new Padding( 0, 0, 0, 12 ),
-			Text = UiText.T( "BlobMerge", "These merged files changed after they were created. Removing the merge will discard those changes." )
+			Text = UiText.T( "BlobMerge", "Delete the selected merges? The files below contain edits. Choose whether to back them up before deleting." )
 		};
 
 		var files = new ListBox
@@ -84,7 +84,7 @@ internal sealed class EditedMergeOutputsForm : BaseForm
 			AutoSize = true,
 			MinimumSize = new Size( 140, 38 ),
 			DialogResult = DialogResult.No,
-			Text = UiText.T( "BlobMerge", "Delete anyway" )
+			Text = UiText.T( "BlobMerge", "Delete without backup" )
 		};
 		var backup = new ModernButton
 		{
