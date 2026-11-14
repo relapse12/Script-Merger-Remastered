@@ -1,4 +1,4 @@
-Script Merger Remastered v3.0
+Script Merger Remastered v3.1
 ===============================
 
 Requirements
